@@ -67,15 +67,14 @@ Nexis is a simple and minimalistic compiler designed to handle basic tasks such 
 
 To start using Nexis, write a simple program in the language and run it through the compiler. Example:
 
-```c
-main() {
-    i4 x = 10;
-    i4 y = 20;
-    if x < y {
-        return x;
+```javascript
+    let x = 10;
+    let y = 20;
+    if x < y
+    {
+        ret x;
     }
-    return y;
-}
+    ret y;
 ```
 
 The compiler will parse and execute the program, returning the correct value based on the logic defined.
