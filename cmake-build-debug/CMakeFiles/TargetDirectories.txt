@@ -1,3 +1,0 @@
-E:/Nexis/cmake-build-debug/CMakeFiles/Nexis.dir
-E:/Nexis/cmake-build-debug/CMakeFiles/edit_cache.dir
-E:/Nexis/cmake-build-debug/CMakeFiles/rebuild_cache.dir
