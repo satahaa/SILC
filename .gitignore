@@ -30,7 +30,6 @@
 
 # Executables
 *.exe
-*.out
 *.app
 *.i*86
 *.x86_64
@@ -50,3 +49,28 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# CLion
+.idea/
+
+# CMake build directories
+cmake-build-debug/
+cmake-build-release/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+
+# Executables
+Nexis
+*.out
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# User-specific files
+*.swp
+*.swo
