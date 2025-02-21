@@ -1,0 +1,4 @@
+# ninja log v6
+1	170	7618483272641015	build.ninja	febedb08663c2ec0
+1	55	7618483272802335	CMakeFiles/Nexis.dir/main.c.obj	59b28d47a2e6faee
+56	208	7618483273340362	Nexis.exe	99f8ad693f0ff612
