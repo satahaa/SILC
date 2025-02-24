@@ -1,7 +1,7 @@
 
-# Nexis Compiler
+# Cor Compiler
 
-Nexis is a simple and minimalistic compiler designed to handle basic tasks such as mathematical operations, control flow (for loops, if statements), functions, and return statements. The project is built using C and is aimed at helping understand the basics of compiler design and construction.
+Cor is a simple and minimalistic compiler designed to handle basic tasks such as mathematical operations, control flow (for loops, if statements), functions, and return statements. The project is built using C and is aimed at helping understand the basics of compiler design and construction.
 
 ---
 
@@ -27,13 +27,13 @@ Nexis is a simple and minimalistic compiler designed to handle basic tasks such 
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/Nexis.git
+   git clone https://github.com/yourusername/Cor.git
    ```
 
 2. Navigate to the project directory:
 
    ```bash
-   cd Nexis
+   cd Cor
    ```
 
 3. Create a build directory:
@@ -58,14 +58,14 @@ Nexis is a simple and minimalistic compiler designed to handle basic tasks such 
 6. Run the compiled executable:
 
    ```bash
-   ./Nexis
+   ./Cor
    ```
 
 ---
 
 ## Usage
 
-To start using Nexis, write a simple program in the language and run it through the compiler. Example:
+To start using Cor, write a simple program in the language and run it through the compiler. Example:
 
 ```javascript
     let x = 10;
@@ -83,7 +83,7 @@ The compiler will parse and execute the program, returning the correct value bas
 
 ## Contributing
 
-Contributions are welcome! If you want to contribute to Nexis, feel free to fork the repository, create a branch, and submit a pull request with your changes.
+Contributions are welcome! If you want to contribute to Cor, feel free to fork the repository, create a branch, and submit a pull request with your changes.
 
 ### Steps to Contribute:
 
