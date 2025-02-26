@@ -9,8 +9,8 @@ int main(const int argc, char *argv[]) {
     }
     char* path = argv[1];
     const size_t len = strlen(path);
-    if (path[len - 1] != 'n' || path[len - 2] != '.' || len < 2) {
-        printf("Invalid filetype: %s\n", path);
+    if (path[len - 1] != 'r' || path[len - 2] != 'o' || path[len - 3] != 'c' || path[len - 4] != '.' || len < 4) {
+        printf("Invalid filetype: %s, file has to end with .cor extension", path);
         exit(EXIT_FAILURE);
     }
 
