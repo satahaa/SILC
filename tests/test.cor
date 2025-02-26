@@ -1,2 +1,3 @@
-ret 177722;
-let x = 177722;
+let x = 17;
+let y = 22;
+ret x;
