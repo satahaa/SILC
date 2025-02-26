@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.30)
 
 # Project Name
-project(Nexis C)
+project(Cor C)
 
 # Set the C standard
 set(CMAKE_C_STANDARD 23)
@@ -20,7 +20,7 @@ set(SOURCES
 )
 
 # Add executable for the project
-add_executable(Nexis ${SOURCES})
+add_executable(Cor ${SOURCES})
 
 # Enable testing (Optional, if you want to use CTest)
 enable_testing()
@@ -30,10 +30,10 @@ add_executable(test_lexer tests/test_lexer.c src/lexer.c)
 add_executable(test_parser tests/test_parser.c src/parser.c)
 add_executable(test_codegen tests/test_codegen.c src/codegen.c)
 
-# Link the test executables with the Nexis executable if needed
-# target_link_libraries(test_lexer Nexis)
-# target_link_libraries(test_parser Nexis)
-# target_link_libraries(test_codegen Nexis)
+# Link the test executables with the Cor executable if needed
+# target_link_libraries(test_lexer Cor)
+# target_link_libraries(test_parser Cor)
+# target_link_libraries(test_codegen Cor)
 
 # Optionally, add testing functionality
 # add_test(NAME LexerTest COMMAND test_lexer)
