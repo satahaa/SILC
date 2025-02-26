@@ -58,7 +58,10 @@ cmake-build-debug/
 cmake-build-release/
 CMakeCache.txt
 CMakeFiles/
+<<<<<<< HEAD
 build/
+=======
+>>>>>>> 544ef28453e8784a74240e6b37aa5a01fd209bfb
 Makefile
 
 # Executables
