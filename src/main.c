@@ -1,106 +1,65 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-typedef enum {
-    INT,
-} TokenLiteral;
+#include "lexer.h"
+#include "parser.h"
+#include <stdbool.h>
+int main(int argc, char *argv[]) {
 
-typedef enum {
-    LET, RET
-} TokenKeyword;
+        // // Check if file path is provided
+        // if (argc != 2) {
+        //     fprintf(stderr, "Usage: %s <path>\n", argv[0]);
+        //     return EXIT_FAILURE;
+        // }
 
-typedef enum {
-    SEMI, OPEN, CLOSE,
-} TokenDelimiter;
-
-typedef struct {
-    union {
-        TokenLiteral ltype;
-        TokenDelimiter dtype;
-        TokenKeyword ktype;
-    } type;
-    int val;
-} Token;
-
-Token *num_gen(char c, FILE *file) {
-    Token *token = malloc(sizeof(Token));
-    token->type.ltype = INT;
-
-    char word[20];
-    int i = 0;
-
-    word[i++] = c;
-    c = (char)fgetc(file);
-    while (isdigit(c) && i < 99) {
-        word[i++] = c;
-        c = (char)fgetc(file);
-        if (!isdigit(c)) {
-            ungetc(c, file);
-            break;
+        // Read the source file
+        size_t length;
+        char* source = read_file("../tests/test.cor", &length);
+        if (!source) {
+            return EXIT_FAILURE;
         }
-    }
 
-    word[i] = '\0';
-    token->val = atoi(word);
+        // Print the source code
+        printf("Source code:\n");
+        printf("--------------------------------------------------\n");
+        printf("%s\n", source);
+        printf("--------------------------------------------------\n\n");
 
-    return token;
-}
-Token *keyword_gen(char c, FILE *file) {
-    Token *token = malloc(sizeof(Token));
-    char word[10];
-    int i = 0;
+        // Initialize the lexer and tokenize
+        Lexer* lexer = lexer_init(source, length);
+        tokenize(lexer);
 
-    word[i++] = c;
-    c = (char)fgetc(file);
-    while (isalpha(c) && i < 99) {
-        word[i++] = c;
-        c = (char)fgetc(file);
-        if (!isalpha(c)) {
-            ungetc(c, file);
-            break;
+        // Print all tokens
+        printf("Tokens:\n");
+        printf("--------------------------------------------------\n");
+        for (size_t i = 0; i < lexer->tokens_count; i++) {
+            Token* token = &lexer->tokens[i];
+            printf("%-12s | %-15s | Line %-3zu | Col %-3zu\n",
+                   token->value,
+                   token_type_strings(token->type),
+                   token->line,
+                   token->column);
         }
-    }
+        printf("--------------------------------------------------\n\n");
 
-    word[i] = '\0';
-    if (!strcmp(word, "let")) {
-        token->type.ktype = LET;
-    } else if (!strcmp(word, "ret")) {
-        token->type.ktype = RET;
-    }
+        // Initialize the parser and parse the program
+        Parser* parser = parser_init(lexer);
+        AstNode* ast = parse_program(parser);
 
-    return token;
-}
-
-void lex(FILE *file) {
-    char c  = fgetc(file);
-    while (c != EOF) {
-        while (c == ' ' || c == '\n')
-            c = (char)fgetc(file);
-
-        if (isdigit(c)) { //number
-            Token *t = num_gen(c, file);
-            printf("LIT: %d\n", t->val);
-            free(t);
-        } else if (isalpha(c)){ //keyword
-            Token *t = keyword_gen(c, file);
-            if (t->type.ktype == LET) {
-                c = (char)fgetc(file);
-                printf("LET\n %c\n", c);
-            } else if (t->type.ktype == RET) {
-                printf("RETURN\n");
-            }
-            free(t);
+        // Check if parsing was successful
+        if (parser->hadError) {
+            printf("Parsing failed with errors.\n");
+        } else {
+            printf("Parsing successful! AST:\n");
+            printf("--------------------------------------------------\n");
+            print_ast(ast, 0);
+            printf("--------------------------------------------------\n");
         }
-        else printf("%c\n", c); //semi
 
-        c = (char)fgetc(file);
+        // Clean up
+        free_ast(ast);
+        parser_free(parser);
+        lexer_free(lexer);
+        free(source);
+
+        return parser->hadError ? EXIT_FAILURE : EXIT_SUCCESS;
     }
-}
-int main() {
-    FILE *file;
-    file = fopen("../tests/test.cor", "r");
-    lex(file);
-    fclose(file);
-}
-
