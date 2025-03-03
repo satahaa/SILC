@@ -12,10 +12,10 @@ typedef enum {
     TOKEN_SEMICOLON,
     TOKEN_EOF,
     TOKEN_UNKNOWN
-} TokenType;
+} Ttype;
 
 typedef struct {
-    TokenType type;
+    Ttype type;
     char* value;
     int line;
     int column;
@@ -31,7 +31,7 @@ Token lexer_next_token();
 void lexer_cleanup();
 
 // Utility functions
-const char* token_type_to_string(TokenType type);
+const char* token_type_to_string(Ttype type);
 void token_free(Token* token);
 
 #endif // LEXER_H

@@ -29,10 +29,9 @@ static void skip_whitespace() {
 }
 
 static char* allocate_string(const char* str) {
-    if (str == NULL) return NULL;
 
-    size_t len = strlen(str);
-    char* result = (char*)malloc(len + 1);
+    const size_t len = strlen(str);
+    const auto result = (char*)malloc(len + 1);
     if (result == NULL) {
         fprintf(stderr, "Memory allocation error\n");
         exit(1);
@@ -42,7 +41,7 @@ static char* allocate_string(const char* str) {
     return result;
 }
 
-static Token create_token(TokenType type, char* value) {
+static Token create_token(const Ttype type, char* value) {
     Token token;
     token.type = type;
     token.value = value;
@@ -55,7 +54,7 @@ Token lexer_next_token() {
     skip_whitespace();
 
     if (current_char == EOF) {
-        return create_token(TOKEN_EOF, NULL);
+        return create_token(TOKEN_EOF, nullptr);
     }
 
     // Check for return keyword
@@ -119,7 +118,7 @@ void lexer_cleanup() {
     // Nothing to clean up for now
 }
 
-const char* token_type_to_string(TokenType type) {
+const char* token_type_to_string(const Ttype type) {
     switch (type) {
         case TOKEN_RETURN: return "RETURN";
         case TOKEN_NUMBER: return "NUMBER";
@@ -133,6 +132,6 @@ const char* token_type_to_string(TokenType type) {
 void token_free(Token* token) {
     if (token->value != NULL) {
         free(token->value);
-        token->value = NULL;
+        token->value = nullptr;
     }
 }

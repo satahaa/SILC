@@ -6,7 +6,7 @@ void parser_init() {
     current_token = lexer_next_token();
 }
 
-static void eat(TokenType type) {
+static void eat(Ttype type) {
     if (current_token.type == type) {
         token_free(&current_token);
         current_token = lexer_next_token();
@@ -78,7 +78,7 @@ void parser_cleanup() {
 
 void program_free(Program* program) {
     free(program->statements);
-    program->statements = NULL;
+    program->statements = nullptr;
     program->count = 0;
     program->capacity = 0;
 }

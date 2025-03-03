@@ -25,11 +25,12 @@ void codegen_generate(Program program) {
         switch (stmt.type) {
             case STMT_RETURN:
                 // For Windows x64
-                    fprintf(output, "    ; Return statement\n");
-            fprintf(output, "    mov rcx, %d     ; return value\n", stmt.ret_stmt.value);
-            fprintf(output, "    call ExitProcess\n");
-            fprintf(output, "    ret\n");
-            break;
+                fprintf(output, "    ; Return statement\n");
+
+                fprintf(output, "    mov rcx, %d     ; return value\n", stmt.ret_stmt.value);
+                fprintf(output, "    call ExitProcess\n");
+                fprintf(output, "    ret\n");
+                break;
         }
     }
 }
@@ -37,6 +38,6 @@ void codegen_generate(Program program) {
 void codegen_cleanup() {
     if (output != NULL) {
         fclose(output);
-        output = NULL;
+        output = nullptr;
     }
 }
