@@ -14,9 +14,7 @@ set(SOURCES
         src/main.c
         src/lexer.c
         src/parser.c
-        src/semantic.c
         src/codegen.c
-        src/utils.c
 )
 
 # Add executable for the project
