@@ -87,22 +87,10 @@ int assemble_and_link(const char* asm_file, const char* obj_file, const char* ex
         return 0;
     }
 
-    // // Try to link using MSVC's link.exe
-    // if (is_program_installed("link")) {
-    //     char link_cmd[256];
-    //     sprintf(link_cmd, "link %s /subsystem:console /entry:main kernel32.lib /out:%s",
-    //             obj_file, exe_file);
-    //     printf("Running: %s\n", link_cmd);
-    //
-    //     if (system(link_cmd) == 0) {
-    //         return 1; // Success
-    //     }
-    // }
-
     // Try to link using GCC (MinGW)
     if (is_program_installed("gcc")) {
         char gcc_cmd[256];
-        sprintf(gcc_cmd, "gcc -o %s %s", exe_file, obj_file);
+        sprintf(gcc_cmd, "gcc -o %s %s -lkernel32", exe_file, obj_file);
         printf("Running: %s\n", gcc_cmd);
 
         if (system(gcc_cmd) == 0) {

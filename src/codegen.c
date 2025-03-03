@@ -14,8 +14,8 @@ void codegen_generate(Program program) {
     // Write the assembly header for Windows x64
     fprintf(output, "; Generated assembly code for Windows x64\n");
     fprintf(output, "section .text\n");
-    fprintf(output, "global main\n");
-    fprintf(output, "extern ExitProcess\n\n");
+    fprintf(output, "   global main\n");
+    fprintf(output, "   extern ExitProcess\n\n");
     fprintf(output, "main:\n");
 
     // Process each statement in the program
@@ -27,9 +27,9 @@ void codegen_generate(Program program) {
                 // For Windows x64
                 fprintf(output, "    ; Return statement\n");
 
-                fprintf(output, "    mov rcx, %d     ; return value\n", stmt.ret_stmt.value);
+                fprintf(output, "    mov eax, %d     ; return value\n", stmt.ret_stmt.value);
                 fprintf(output, "    call ExitProcess\n");
-                fprintf(output, "    ret\n");
+                //fprintf(output, "    ret\n");
                 break;
         }
     }
