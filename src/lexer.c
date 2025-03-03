@@ -1,300 +1,138 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <string.h>
-#include <stdbool.h>
-// Token types with descriptive names
+#include "lexer.h"
 
-typedef enum {
-    TOKEN_LET,
-    TOKEN_RET,
-    TOKEN_INT,
-    TOKEN_IDENTIFIER,
-    TOKEN_ASSIGN,
-    TOKEN_SEMICOLON,
-    TOKEN_EOF
-} TokenType;
+static FILE* source;
+static int current_line = 1;
+static int current_column = 0;
+static int current_char;
 
-// String representation of token types (for debugging)
-const char* token_type_strings[] = {
-    "LET", "RET", "INT", "IDENTIFIER", "ASSIGN", "SEMICOLON", "EOF"
-};
-
-typedef struct {
-    TokenType type;
-    char *value;
-    size_t line;
-    size_t column;
-} Token;
-
-typedef struct {
-    char *source;
-    size_t source_length;
-    size_t position;
-    size_t line;
-    size_t column;
-    Token *tokens;
-    size_t tokens_capacity;
-    size_t tokens_count;
-} Lexer;
-
-// Keyword mapping structure
-typedef struct {
-    const char *keyword;
-    TokenType type;
-} Keyword;
-
-// Define keywords
-static const Keyword keywords[] = {
-    {"let", TOKEN_LET},
-    {"ret", TOKEN_RET},
-    {NULL, 0} // Sentinel value
-};
-
-// Initialize lexer
-Lexer* lexer_init(const char *source, const size_t length) {
-    Lexer *lexer = malloc(sizeof(Lexer));
-    if (!lexer) {
-        fprintf(stderr, "Memory allocation failed for lexer\n");
-        exit(EXIT_FAILURE);
-    }
-
-    lexer->source = malloc(length + 1);
-    if (!lexer->source) {
-        fprintf(stderr, "Memory allocation failed for source\n");
-        free(lexer);
-        exit(EXIT_FAILURE);
-    }
-
-    memcpy(lexer->source, source, length);
-    lexer->source[length] = '\0';
-    lexer->source_length = length;
-    lexer->position = 0;
-    lexer->line = 1;
-    lexer->column = 1;
-
-    // Start with a reasonable token capacity
-    lexer->tokens_capacity = 32;
-    lexer->tokens = malloc(sizeof(Token) * lexer->tokens_capacity);
-    if (!lexer->tokens) {
-        fprintf(stderr, "Memory allocation failed for tokens\n");
-        free(lexer->source);
-        free(lexer);
-        exit(EXIT_FAILURE);
-    }
-
-    lexer->tokens_count = 0;
-
-    return lexer;
+void lexer_init(FILE* source_file) {
+    source = source_file;
+    current_line = 1;
+    current_column = 0;
+    current_char = fgetc(source);
 }
 
-// Free lexer resources
-void lexer_free(Lexer *lexer) {
-    if (!lexer) return;
-
-    // Free all token values
-    for (size_t i = 0; i < lexer->tokens_count; i++) {
-        if (lexer->tokens[i].value != NULL)
-            free(lexer->tokens[i].value);
-    }
-
-    free(lexer->tokens);
-    free(lexer->source);
-    free(lexer);
-}
-
-// Check if we've reached the end of the source
-bool is_at_end(const Lexer *lexer) {
-    return lexer->position >= lexer->source_length;
-}
-
-// Get current character without advancing
-char peek(const Lexer *lexer) {
-    if (is_at_end(lexer)) return '\0';
-    return lexer->source[lexer->position];
-}
-
-// Get next character without advancing
-char peek_next(const Lexer *lexer) {
-    if (lexer->position + 1 >= lexer->source_length) return '\0';
-    return lexer->source[lexer->position + 1];
-}
-
-// Advance to next character
-char advnc_lex(Lexer *lexer) {
-    const char c = lexer->source[lexer->position++];
-
-    if (c == '\n') {
-        lexer->line++;
-        lexer->column = 1;
+static void advance() {
+    if (current_char == '\n') {
+        current_line++;
+        current_column = 0;
     } else {
-        lexer->column++;
+        current_column++;
     }
-
-    return c;
+    current_char = fgetc(source);
 }
 
-// Add a token to the token list
-void add_token(Lexer *lexer, const TokenType type, const char *value) {
-    // Ensure there's enough space
-    if (lexer->tokens_count >= lexer->tokens_capacity) {
-        lexer->tokens_capacity *= 2;
-        lexer->tokens = realloc(lexer->tokens, sizeof(Token) * lexer->tokens_capacity);
-        if (!lexer->tokens) {
-            fprintf(stderr, "Memory reallocation failed for tokens\n");
-            exit(EXIT_FAILURE);
+static void skip_whitespace() {
+    while (current_char != EOF && isspace(current_char)) {
+        advance();
+    }
+}
+
+static char* allocate_string(const char* str) {
+    if (str == NULL) return NULL;
+
+    size_t len = strlen(str);
+    char* result = (char*)malloc(len + 1);
+    if (result == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(1);
+    }
+
+    strcpy(result, str);
+    return result;
+}
+
+static Token create_token(TokenType type, char* value) {
+    Token token;
+    token.type = type;
+    token.value = value;
+    token.line = current_line;
+    token.column = current_column;
+    return token;
+}
+
+Token lexer_next_token() {
+    skip_whitespace();
+
+    if (current_char == EOF) {
+        return create_token(TOKEN_EOF, NULL);
+    }
+
+    // Check for return keyword
+    if (current_char == 'r') {
+        char buffer[10];
+        int i = 0;
+
+        while (current_char != EOF && isalpha(current_char) && i < 9) {
+            buffer[i++] = current_char;
+            advance();
         }
-    }
+        buffer[i] = '\0';
 
-    Token *token = &lexer->tokens[lexer->tokens_count++];
-    token->type = type;
-    token->value = strdup(value);
-    token->line = lexer->line;
-    token->column = lexer->column - strlen(value);
-}
-
-// Skip whitespace
-void skip_whitespace(Lexer *lexer) {
-    while (!is_at_end(lexer)) {
-        const char c = peek(lexer);
-        if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-            advnc_lex(lexer);
+        if (strcmp(buffer, "ret") == 0) {
+            return create_token(TOKEN_RETURN, allocate_string(buffer));
         } else {
-            break;
-        }
-    }
-}
-
-// Process an identifier or keyword
-void identifier(Lexer *lexer) {
-    const size_t start_pos = lexer->position - 1;
-
-    while (!is_at_end(lexer) && (isalnum(peek(lexer)) || peek(lexer) == '_')) {
-        advnc_lex(lexer);
-    }
-
-    const size_t length = lexer->position - start_pos;
-    char *text = malloc(length + 1);
-    if (!text) {
-        fprintf(stderr, "Memory allocation failed for identifier\n");
-        exit(EXIT_FAILURE);
-    }
-
-    strncpy(text, &lexer->source[start_pos], length);
-    text[length] = '\0';
-
-    // Check if it's a keyword
-    TokenType type = TOKEN_IDENTIFIER;
-    for (int i = 0; keywords[i].keyword != NULL; i++) {
-        if (strcmp(text, keywords[i].keyword) == 0) {
-            type = keywords[i].type;
-            break;
+            return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
         }
     }
 
-    add_token(lexer, type, text);
-    free(text);
-}
+    // Check for numbers
+    if (isdigit(current_char)) {
+        char buffer[32];
+        int i = 0;
 
-// Process a number
-void number(Lexer *lexer) {
-    const size_t start_pos = lexer->position - 1;
-
-    while (!is_at_end(lexer) && isdigit(peek(lexer))) {
-        advnc_lex(lexer);
-    }
-
-    const size_t length = lexer->position - start_pos;
-    char *text = malloc(length + 1);
-    if (!text) {
-        fprintf(stderr, "Memory allocation failed for number\n");
-        exit(EXIT_FAILURE);
-    }
-
-    strncpy(text, &lexer->source[start_pos], length);
-    text[length] = '\0';
-
-    add_token(lexer, TOKEN_INT, text);
-    free(text);
-}
-
-// Scan a single token
-void scan_token(Lexer *lexer) {
-    const char c = advnc_lex(lexer);
-
-    switch (c) {
-        case ';': add_token(lexer, TOKEN_SEMICOLON, ";"); break;
-        case '=': add_token(lexer, TOKEN_ASSIGN, "="); break;
-
-        case ' ':
-        case '\r':
-        case '\t':
-        case '\n':
-            // Whitespace already handled by skip_whitespace
-            break;
-
-        default:
-            if (isdigit(c)) {
-                number(lexer);
-            } else if (isalpha(c) || c == '_') {
-                identifier(lexer);
-            } else {
-                fprintf(stderr, "Unexpected character '%c' at line %zu, column %zu\n",
-                        c, lexer->line, lexer->column - 1);
-            }
-            break;
-    }
-}
-
-// Tokenize the entire source
-Token* tokenize(Lexer *lexer) {
-    while (!is_at_end(lexer)) {
-        skip_whitespace(lexer);
-        if (!is_at_end(lexer)) {
-            scan_token(lexer);
+        while (current_char != EOF && isdigit(current_char) && i < 31) {
+            buffer[i++] = current_char;
+            advance();
         }
+        buffer[i] = '\0';
+
+        return create_token(TOKEN_NUMBER, allocate_string(buffer));
     }
 
-    // Add EOF token
-    add_token(lexer, TOKEN_EOF, "EOF");
+    // Check for semicolon
+    if (current_char == ';') {
+        char* value = malloc(2);
+        if (value == NULL) {
+            fprintf(stderr, "Memory allocation error\n");
+            exit(1);
+        }
+        value[0] = current_char;
+        value[1] = '\0';
+        advance();
+        return create_token(TOKEN_SEMICOLON, value);
+    }
 
-    return lexer->tokens;
+    // Unknown token
+    char* value = malloc(2);
+    if (value == NULL) {
+        fprintf(stderr, "Memory allocation error\n");
+        exit(1);
+    }
+    value[0] = current_char;
+    value[1] = '\0';
+    advance();
+    return create_token(TOKEN_UNKNOWN, value);
 }
 
-// Print a token (for debugging)
-void print_token(const Token *token) {
-    printf("TOKEN: '%s', TYPE: %s, LINE: %zu, COLUMN: %zu\n",
-           token->value, token_type_strings[token->type], token->line, token->column);
+void lexer_cleanup() {
+    // Nothing to clean up for now
 }
 
-// Load file contents into memory
-char* read_file(const char* path, size_t *length) {
-    FILE *file = fopen(path, "rb");
-    if (!file) {
-        fprintf(stderr, "Could not open file '%s'\n", path);
-        exit(EXIT_FAILURE);
+const char* token_type_to_string(TokenType type) {
+    switch (type) {
+        case TOKEN_RETURN: return "RETURN";
+        case TOKEN_NUMBER: return "NUMBER";
+        case TOKEN_SEMICOLON: return "SEMICOLON";
+        case TOKEN_EOF: return "EOF";
+        case TOKEN_UNKNOWN: return "UNKNOWN";
+        default: return "UNDEFINED";
     }
+}
 
-    fseek(file, 0, SEEK_END);
-    *length = ftell(file);
-    rewind(file);
-
-    char *buffer = malloc(*length + 1);
-    if (!buffer) {
-        fprintf(stderr, "Not enough memory to read '%s'\n", path);
-        fclose(file);
-        exit(EXIT_FAILURE);
+void token_free(Token* token) {
+    if (token->value != NULL) {
+        free(token->value);
+        token->value = NULL;
     }
-
-    const size_t bytes_read = fread(buffer, sizeof(char), *length, file);
-    if (bytes_read < *length) {
-        fprintf(stderr, "Could not read file '%s'\n", path);
-        free(buffer);
-        fclose(file);
-        exit(EXIT_FAILURE);
-    }
-
-    buffer[*length] = '\0';
-    fclose(file);
-    return buffer;
 }

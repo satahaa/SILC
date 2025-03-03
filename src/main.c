@@ -1,65 +1,39 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include "lexer.h"
 #include "parser.h"
-#include <stdbool.h>
-int main(int argc, char *argv[]) {
+#include "codegen.h"
 
-        // // Check if file path is provided
-        // if (argc != 2) {
-        //     fprintf(stderr, "Usage: %s <path>\n", argv[0]);
-        //     return EXIT_FAILURE;
-        // }
+int main() {
+    const char* input_file = "../tests/test.cor";
+    const char* output_file = "output.asm";
 
-        // Read the source file
-        size_t length;
-        char* source = read_file("../tests/test.cor", &length);
-        if (!source) {
-            return EXIT_FAILURE;
-        }
-
-        // Print the source code
-        printf("Source code:\n");
-        printf("--------------------------------------------------\n");
-        printf("%s\n", source);
-        printf("--------------------------------------------------\n\n");
-
-        // Initialize the lexer and tokenize
-        Lexer* lexer = lexer_init(source, length);
-        tokenize(lexer);
-
-        // Print all tokens
-        printf("Tokens:\n");
-        printf("--------------------------------------------------\n");
-        for (size_t i = 0; i < lexer->tokens_count; i++) {
-            Token* token = &lexer->tokens[i];
-            printf("%-12s | %-15s | Line %-3zu | Col %-3zu\n",
-                   token->value,
-                   token_type_strings(token->type),
-                   token->line,
-                   token->column);
-        }
-        printf("--------------------------------------------------\n\n");
-
-        // Initialize the parser and parse the program
-        Parser* parser = parser_init(lexer);
-        AstNode* ast = parse_program(parser);
-
-        // Check if parsing was successful
-        if (parser->hadError) {
-            printf("Parsing failed with errors.\n");
-        } else {
-            printf("Parsing successful! AST:\n");
-            printf("--------------------------------------------------\n");
-            print_ast(ast, 0);
-            printf("--------------------------------------------------\n");
-        }
-
-        // Clean up
-        free_ast(ast);
-        parser_free(parser);
-        lexer_free(lexer);
-        free(source);
-
-        return parser->hadError ? EXIT_FAILURE : EXIT_SUCCESS;
+    // Open the input file
+    FILE* source = fopen(input_file, "r");
+    if (source == NULL) {
+        fprintf(stderr, "Error: Could not open input file %s\n", input_file);
+        return 1;
     }
+
+    // Initialize the compiler components
+    lexer_init(source);
+    parser_init();
+    codegen_init(output_file);
+
+    // Parse the input
+    Program program = parser_parse();
+
+    // Generate code
+    codegen_generate(program);
+
+    // Clean up resources
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    codegen_cleanup();
+
+    fclose(source);
+
+    printf("Compilation completed successfully. Output written to %s\n", output_file);
+
+    return 0;
+}
