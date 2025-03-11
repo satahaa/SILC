@@ -6,7 +6,7 @@ void codegen_init(const char* output_file) {
     output = fopen(output_file, "w");
     if (output == NULL) {
         fprintf(stderr, "Error: Could not open output file %s\n", output_file);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 }
 

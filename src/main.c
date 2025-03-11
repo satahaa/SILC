@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     FILE* source = fopen(input_file, "r");
     if (source == NULL) {
         fprintf(stderr, "Error: Could not open input file %s\n", input_file);
-        return 1;
+        exit(EXIT_FAILURE);
     }
 
     // Initialize the compiler components
@@ -48,9 +48,9 @@ int main(int argc, char** argv) {
 
     // Compile code
     char command[256];
-    sprintf(command, "E:\\msys2\\mingw64\\bin\\gcc.exe %s -o %s -Wl,-subsystem,console", c_file, exe_file);
+    sprintf(command, "E:\\msys2\\mingw64\\bin\\gcc.exe %s -o %s", c_file, exe_file);
     int ret = system(command);
-    printf("Executing command: \"%s\"\n", command);
+
     if (ret) {
         printf("Compilation failed! Aborting.. \n");
         exit(EXIT_FAILURE);
