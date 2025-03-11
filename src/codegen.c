@@ -25,7 +25,7 @@ void codegen_generate(Program program) {
 
         switch (stmt.type) {
             case STMT_RETURN:
-                fprintf(output, "   printf(\"30\");\n    exit(%d);\n", stmt.ret_stmt.value);
+                fprintf(output, "   exit(%d);\n", stmt.ret_stmt.value);
                 break;
         }
     }

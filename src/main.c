@@ -38,28 +38,27 @@ int main(int argc, char** argv) {
     // Parse the input
     Program program = parser_parse();
 
-    // Generate code
+    //Generate code
     codegen_generate(program);
+    codegen_cleanup();
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    fclose(source);
+
+    // Compile code
     char command[256];
-    sprintf(command, "E:\\msys2\\mingw64\\bin\\gcc.exe %s -o %s -mconsole -nostartfiles", c_file, exe_file);
+    sprintf(command, "E:\\msys2\\mingw64\\bin\\gcc.exe %s -o %s -Wl,-subsystem,console", c_file, exe_file);
     int ret = system(command);
     printf("Executing command: \"%s\"\n", command);
-    printf("System call returned: %d\n", ret);
     if (ret) {
         printf("Compilation failed! Aborting.. \n");
         exit(EXIT_FAILURE);
     }
-    program_free(&program);
-    parser_cleanup();
-    lexer_cleanup();
-    codegen_cleanup();
-
-    fclose(source);
+    // Optional: Clean up intermediate files
+    remove(c_file);
 
     printf("Compilation completed successfully. Executable created: %s\n", exe_file);
-
-    // Optional: Clean up intermediate files
-    //remove(c_file);
 
     return 0;
 }
