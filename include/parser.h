@@ -1,9 +1,9 @@
 #ifndef PARSER_H
 #define PARSER_H
-#include "lexer.h"
+
 
 typedef enum {
-    STMT_RETURN
+    STMT_RETURN, STMT_LET,
 } StatementType;
 
 typedef struct {
@@ -11,9 +11,15 @@ typedef struct {
 } ReturnStatement;
 
 typedef struct {
+    char* ident;
+    int value;
+} LetStatement;
+
+typedef struct {
     StatementType type;
     union {
         ReturnStatement ret_stmt;
+        LetStatement let_stmt;
     };
 } Statement;
 

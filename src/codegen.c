@@ -24,9 +24,15 @@ void codegen_generate(Program program) {
         Statement stmt = program.statements[i];
 
         switch (stmt.type) {
+            case STMT_LET:
+                fprintf(output, "   int %s = %d;\n", stmt.let_stmt.ident, stmt.let_stmt.value);
+                break;
             case STMT_RETURN:
                 fprintf(output, "   exit(%d);\n", stmt.ret_stmt.value);
                 break;
+            default:
+                fprintf(stderr, "Error: Unknown statement type\n");
+                exit(EXIT_FAILURE);
         }
     }
     fprintf(output, "}\n");
