@@ -3,13 +3,13 @@
 static FILE* source;
 static int current_line = 1;
 static int current_column = 0;
-static int current_char;
+static char current_char;
 
 void lexer_init(FILE* source_file) {
     source = source_file;
     current_line = 1;
     current_column = 0;
-    current_char = fgetc(source);
+    current_char = (char)fgetc(source);
 }
 
 static void advance() {
@@ -19,7 +19,7 @@ static void advance() {
     } else {
         current_column++;
     }
-    current_char = fgetc(source);
+    current_char = (char)fgetc(source);
 }
 
 static void skip_whitespace() {
@@ -74,7 +74,41 @@ Token lexer_next_token() {
             return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
         }
     }
+    if (current_char == 'l') {
+        char buffer[10];
+        int i = 0;
 
+        while (current_char != EOF && isalpha(current_char) && i < 9) {
+            buffer[i++] = current_char;
+            advance();
+        }
+        buffer[i] = '\0';
+
+        if (strcmp(buffer, "let") == 0) {
+            return create_token(TOKEN_LET, allocate_string(buffer));
+        } else {
+            return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
+        }
+    }
+    if (isalpha(current_char)) {
+        char buffer[32];
+        int i = 0;
+
+        while (current_char != EOF && isalnum(current_char) && i < 31) {
+            buffer[i++] = current_char;
+            advance();
+        }
+        buffer[i] = '\0';
+
+        return create_token(TOKEN_IDENT, allocate_string(buffer));
+    }
+    if (current_char == '=') {
+        char buffer[2];
+        buffer[0] = current_char;
+        buffer[1] = '\0';
+        advance();
+        return create_token(TOKEN_EQ, allocate_string(buffer));
+    }
     // Check for numbers
     if (isdigit(current_char)) {
         char buffer[32];
@@ -125,6 +159,7 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_SEMICOLON: return "SEMICOLON";
         case TOKEN_EOF: return "EOF";
         case TOKEN_UNKNOWN: return "UNKNOWN";
+        case TOKEN_LET: return "LET";
         default: return "UNDEFINED";
     }
 }
