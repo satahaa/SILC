@@ -5,7 +5,8 @@
 static Token current_token;
 
 void parser_init() {
-    current_token = lexer_next_token(current_token);
+    Token null_token = {TOKEN_UNKNOWN, nullptr, 0, 0};
+    current_token = lexer_next_token(null_token);
 }
 
 static void eat(const Ttype type) {

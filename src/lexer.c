@@ -60,6 +60,18 @@ Token lexer_next_token(const Token current_token) {
         return create_token(TOKEN_EOF, nullptr);
     }
 
+    if (isalpha(current_char) && (current_token.type == TOKEN_LET || current_token.type == TOKEN_RETURN)) {
+        char buffer[32];
+        int i = 0;
+
+        while (current_char != EOF && isalnum(current_char) && i < 31) {
+            buffer[i++] = current_char;
+            advance();
+        }
+        buffer[i] = '\0';
+
+        return create_token(TOKEN_IDENT, allocate_string(buffer));
+    }
     // Check for return keyword
     if (current_char == 'r') {
         char buffer[10];
@@ -76,7 +88,7 @@ Token lexer_next_token(const Token current_token) {
         }
         return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
     }
-    if (current_char == 'l' && current_token.type != TOKEN_LET) {
+    if (current_char == 'l') {
         char buffer[10];
         int i = 0;
 
@@ -90,18 +102,6 @@ Token lexer_next_token(const Token current_token) {
             return create_token(TOKEN_LET, allocate_string(buffer));
         }
         return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
-    }
-    if (isalpha(current_char)) {
-        char buffer[32];
-        int i = 0;
-
-        while (current_char != EOF && isalnum(current_char) && i < 31) {
-            buffer[i++] = current_char;
-            advance();
-        }
-        buffer[i] = '\0';
-
-        return create_token(TOKEN_IDENT, allocate_string(buffer));
     }
     if (current_char == '=') {
         char buffer[2];

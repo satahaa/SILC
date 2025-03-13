@@ -29,8 +29,12 @@ void codegen_generate(const Program program) {
                 fprintf(output, "   int %s = %d;\n", stmt.let_stmt.ident, stmt.let_stmt.value);
                 break;
             case STMT_RETURN:
-                    fprintf(output, "   return %d;\n", stmt.ret_stmt.value);
+                if (stmt.ret_stmt.ident == nullptr) {
+                    fprintf(output, "   exit(%d);\n", stmt.ret_stmt.value);
                     break;
+                }
+                fprintf(output, "   exit(%s);\n", stmt.ret_stmt.ident);
+                break;
             default:
                 fprintf(stderr, "Error: Unknown statement type\n");
                 exit(EXIT_FAILURE);

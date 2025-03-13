@@ -1,2 +1,4 @@
-let l = 42;
-ret 7;
+let r = 42;
+let s = 47;
+let l = 60;
+ret l;

@@ -7,8 +7,8 @@ typedef enum {
 } StatementType;
 
 typedef struct {
-        int value;
-        char* ident;
+    int value;
+    char* ident;
 } ReturnStatement;
 
 typedef struct {

@@ -58,7 +58,7 @@ int main(const int argc, const char** argv) {
         exit(EXIT_FAILURE);
     }
     // Optional: Clean up intermediate files
-    //remove(c_file);
+    remove(c_file);
 
     printf("Compilation completed successfully. Executable created: %s\n", exe_file);
 
