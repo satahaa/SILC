@@ -27,7 +27,7 @@ Cor is a simple and minimalistic compiler designed to handle basic tasks such as
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/Cor.git
+   git clone https://github.com/satahaa/Cor.git
    ```
 
 2. Navigate to the project directory:

@@ -1,16 +1,17 @@
+#include <stdlib.h>
+#include <string.h>
 #include "parser.h"
 #include "lexer.h"
-
 static Token current_token;
 
 void parser_init() {
-    current_token = lexer_next_token();
+    current_token = lexer_next_token(current_token);
 }
 
 static void eat(const Ttype type) {
     if (current_token.type == type) {
         token_free(&current_token);
-        current_token = lexer_next_token();
+        current_token = lexer_next_token(current_token);
     } else {
         fprintf(stderr, "Syntax error: Expected %s but got %s at line %d, column %d\n",
                 token_type_to_string(type),
@@ -29,7 +30,12 @@ static Statement parse_return_statement() {
 
     if (current_token.type == TOKEN_NUMBER) {
         stmt.ret_stmt.value = atoi(current_token.value);
+        stmt.ret_stmt.ident = nullptr;
         eat(TOKEN_NUMBER);
+    } else if (current_token.type == TOKEN_IDENT) {
+        stmt.ret_stmt.ident = strdup(current_token.value);
+        stmt.ret_stmt.value = -1;
+        eat(TOKEN_IDENT);
     } else {
         fprintf(stderr, "Syntax error: Expected number after 'ret' at line %d, column %d\n",
                 current_token.line, current_token.column);
@@ -47,7 +53,7 @@ static Statement parse_let_statement() {
     eat(TOKEN_LET);
 
     if (current_token.type == TOKEN_IDENT) {
-        stmt.let_stmt.ident = current_token.value;
+        stmt.let_stmt.ident = strdup(current_token.value);
         eat(TOKEN_IDENT);
     } else {
         fprintf(stderr, "Syntax error: Expected identifier after 'let' at line %d, column %d\n",
@@ -96,7 +102,13 @@ Program parser_parse() {
 
         if (program.count >= program.capacity) {
             program.capacity *= 2;
-            program.statements = realloc(program.statements, program.capacity * sizeof(Statement));
+            Statement* tmp = realloc(program.statements, program.capacity * sizeof(Statement));
+            if (tmp == NULL) {
+                free(program.statements);
+                fprintf(stderr, "Memory allocation error\n");
+                exit(1);
+            }
+            program.statements = tmp;
         }
 
         program.statements[program.count++] = stmt;

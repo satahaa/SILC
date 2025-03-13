@@ -2,9 +2,6 @@
 #define LEXER_H
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
 
 typedef enum {
     TOKEN_RETURN,
@@ -28,7 +25,7 @@ typedef struct {
 void lexer_init(FILE* source_file);
 
 // Get the next token from the source
-Token lexer_next_token();
+Token lexer_next_token(const Token current_token);
 
 // Free resources used by the lexer
 void lexer_cleanup();
