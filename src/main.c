@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
 
-int main(int argc, char** argv) {
+int main(const int argc, const char** argv) {
 
     const char* c_file = "a.c";
     const char* exe_file = "a.exe";
@@ -48,8 +50,8 @@ int main(int argc, char** argv) {
 
     // Compile code
     char command[256];
-    sprintf(command, "E:\\msys2\\mingw64\\bin\\gcc.exe %s -o %s", c_file, exe_file);
-    int ret = system(command);
+    sprintf(command, "gcc %s -o %s", c_file, exe_file);
+    const int ret = system(command);
 
     if (ret) {
         printf("Compilation failed! Aborting.. \n");
