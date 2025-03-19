@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+
 #include <ctype.h>
 #include "lexer.h"
 
@@ -60,49 +61,32 @@ Token lexer_next_token(const Token current_token) {
         return create_token(TOKEN_EOF, nullptr);
     }
 
-    if (isalpha(current_char) && (current_token.type == TOKEN_LET || current_token.type == TOKEN_RETURN)) {
+if (isalpha(current_char)) {
         char buffer[32];
         int i = 0;
 
-        while (current_char != EOF && isalnum(current_char) && i < 31) {
+        while (current_char != EOF && (isalnum(current_char) || current_char == '_') && i < 31) {
             buffer[i++] = current_char;
             advance();
         }
         buffer[i] = '\0';
 
-        return create_token(TOKEN_IDENT, allocate_string(buffer));
-    }
-    // Check for return keyword
-    if (current_char == 'r') {
-        char buffer[10];
-        int i = 0;
-
-        while (current_char != EOF && isalpha(current_char) && i < 9) {
-            buffer[i++] = current_char;
-            advance();
-        }
-        buffer[i] = '\0';
-
-        if (strcmp(buffer, "ret") == 0) {
-            return create_token(TOKEN_RETURN, allocate_string(buffer));
-        }
-        return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
-    }
-    if (current_char == 'l') {
-        char buffer[10];
-        int i = 0;
-
-        while (current_char != EOF && isalpha(current_char) && i < 9) {
-            buffer[i++] = current_char;
-            advance();
-        }
-        buffer[i] = '\0';
-
+        // Check for keywords
         if (strcmp(buffer, "let") == 0) {
             return create_token(TOKEN_LET, allocate_string(buffer));
         }
-        return create_token(TOKEN_UNKNOWN, allocate_string(buffer));
-    }
+        if (strcmp(buffer, "ret") == 0) {
+            return create_token(TOKEN_RETURN, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "return") == 0 || strcmp(buffer, "int") == 0) {
+            fprintf(stderr, "Syntax error: Cannot use reserved keyword at line %d, column %d\n",
+                    current_line, current_column);
+            exit(EXIT_FAILURE);
+        }
+
+        return create_token(TOKEN_IDENT, allocate_string(buffer));
+}
+
     if (current_char == '=') {
         char buffer[2];
         buffer[0] = current_char;
@@ -123,7 +107,34 @@ Token lexer_next_token(const Token current_token) {
 
         return create_token(TOKEN_NUMBER, allocate_string(buffer));
     }
+    //Operators
+    if (current_char == '+' ||
+        current_char == '-' ||
+        current_char == '*' ||
+        current_char == '/' ||
+        current_char == '%' ||
+        current_char == '(' ||
+        current_char == ')') {
 
+        char buffer[2];
+        buffer[0] = current_char;
+        buffer[1] = '\0';
+
+        Ttype type;
+        switch (buffer[0]) {
+            case '+': type = TOKEN_PLUS; break;
+            case '-': type = TOKEN_MINUS; break;
+            case '*': type = TOKEN_MUL; break;
+            case '/': type = TOKEN_DIV; break;
+            case '%': type = TOKEN_MOD; break;
+            case '(': type = TOKEN_LPAREN; break;
+            case ')': type = TOKEN_RPAREN; break;
+            default: type = TOKEN_UNKNOWN;
+        }
+
+        advance();
+        return create_token(type, allocate_string(buffer));
+    }
     // Check for semicolon
     if (current_char == ';') {
         char* value = malloc(2);
@@ -161,6 +172,15 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_EOF: return "EOF";
         case TOKEN_UNKNOWN: return "UNKNOWN";
         case TOKEN_LET: return "LET";
+        case TOKEN_IDENT: return "IDENT";
+        case TOKEN_EQ: return "EQ";
+        case TOKEN_PLUS: return "PLUS";
+        case TOKEN_MINUS: return "MINUS";
+        case TOKEN_MUL: return "MUL";
+        case TOKEN_DIV: return "DIV";
+        case TOKEN_MOD: return "MOD";
+        case TOKEN_LPAREN: return "LPAREN";
+        case TOKEN_RPAREN: return "RPAREN";
         default: return "UNDEFINED";
     }
 }
