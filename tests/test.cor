@@ -1,4 +1,4 @@
-let r = 42;
-let s = 47;
-let l = 60;
+let r = 4286;
+let k = 10221;
+let l = r * k + 29997109;
 ret l;

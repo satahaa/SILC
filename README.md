@@ -1,17 +1,16 @@
-
 # Cor Compiler
 
-Cor is a simple and minimalistic compiler designed to handle basic tasks such as mathematical operations, control flow (for loops, if statements), functions, and return statements. The project is built using C and is aimed at helping understand the basics of compiler design and construction.
+Cor is a simple and minimalistic compiler designed to handle mathematical operations, variable assignments, return statements, and basic control flow. The project is built using C and focuses on understanding the fundamentals of compiler design and implementation.
 
 ---
 
 ## Features
 
 - **Integer Literals**: Supports integer literals and basic arithmetic operations.
-- **Control Flow**: Implements simple `for` loops and `if` statements for basic decision-making and iteration.
-- **Functions**: Supports the definition of functions with basic return types.
-- **Return Statements**: Implements function return values.
-- **Minimalistic Design**: Designed to be lightweight and simple, focusing on core compiler functionality.
+- **Variable Assignments**: Implements variable declaration using the `let` keyword.
+- **Return Statements**: Supports returning values using the `ret` keyword.
+- **Control Flow (Future Work)**: Planned support for `if` statements and loops.
+- **Minimalistic Design**: Lightweight and simple, focusing on core compiler functionality.
 
 ---
 
@@ -25,38 +24,27 @@ Cor is a simple and minimalistic compiler designed to handle basic tasks such as
 ### Steps
 
 1. Clone the repository:
-
    ```bash
    git clone https://github.com/satahaa/Cor.git
    ```
-
 2. Navigate to the project directory:
-
    ```bash
    cd Cor
    ```
-
 3. Create a build directory:
-
    ```bash
    mkdir build
    cd build
    ```
-
 4. Generate build files using CMake:
-
    ```bash
    cmake ..
    ```
-
 5. Build the project:
-
    ```bash
    cmake --build .
    ```
-
 6. Run the compiled executable:
-
    ```bash
    ./Cor
    ```
@@ -65,25 +53,40 @@ Cor is a simple and minimalistic compiler designed to handle basic tasks such as
 
 ## Usage
 
-To start using Cor, write a simple program in the language and run it through the compiler. Example:
+To use Cor, write a simple program and run it through the compiler. Example:
 
-```javascript
-    let x = 10;
-    let y = 20;
-    if x < y
-    {
-        ret x;
-    }
-    ret y;
+```cor
+let x = 10;
+let y = 20;
+ret x + y;
 ```
 
-The compiler will parse and execute the program, returning the correct value based on the logic defined.
+The compiler parses the code, generates C output, and compiles it using GCC.
+
+---
+
+## Implementation
+
+### 1. Lexical Analysis
+- Tokenizes keywords (`let`, `ret`), identifiers, operators, numbers, and delimiters.
+- Uses safer `strtol()` for number parsing.
+
+### 2. Parsing
+- Implements a recursive descent parser.
+- Builds an Abstract Syntax Tree (AST) for statements and expressions.
+
+### 3. Code Generation
+- Converts AST into equivalent C code.
+- Wraps expressions in parentheses to preserve operator precedence.
+
+### 4. Compilation Pipeline
+- Reads the source file, tokenizes input, generates an AST, converts it to C, and invokes GCC.
 
 ---
 
 ## Contributing
 
-Contributions are welcome! If you want to contribute to Cor, feel free to fork the repository, create a branch, and submit a pull request with your changes.
+Contributions are welcome! If you want to contribute to Cor, fork the repository, create a branch, and submit a pull request with your changes.
 
 ### Steps to Contribute:
 
@@ -95,13 +98,16 @@ Contributions are welcome! If you want to contribute to Cor, feel free to fork t
 
 ---
 
-## Acknowledgments
+## Future Improvements
 
-- Inspired by the need to understand basic compiler concepts.
-- Thanks to all the open-source contributors and resources that helped in the development of this project.
+- **Support for conditionals (`if`/`else`)**
+- **Implement functions and scopes**
+- **Add more data types (strings, booleans)**
+- **Improve error handling**
 
 ---
 
 ## Contact
 
-If you have any questions or suggestions, feel free to open an issue or contact me directly at `satahaa12345@gmail.com`.
+If you have any questions or suggestions, feel free to open an issue or contact me at `satahaa12345@gmail.com`.
+

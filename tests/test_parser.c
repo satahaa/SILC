@@ -1,63 +1,91 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "lexer.h"
-#include "parser.h"
-int main(const int argc, char* argv[]) {
-    // Check if file path is provided
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <path>\n", argv[0]);
-        return EXIT_FAILURE;
+#include <string.h>
+#include <assert.h>
+#include "../include/parser.h"
+#include "../include/lexer.h"
+
+FILE* create_test_file(const char* content) {
+    FILE* file = tmpfile();
+    if (file) {
+        fputs(content, file);
+        rewind(file);
     }
+    return file;
+}
 
-    // Read the source file
-    size_t length;
-    char* source = read_file(argv[1], &length);
-    if (!source) {
-        return EXIT_FAILURE;
-    }
+void test_parse_let_statement() {
+    FILE* test_file = create_test_file("let x = 42;");
+    lexer_init(test_file);
+    parser_init();
 
-    // Print the source code
-    printf("Source code:\n");
-    printf("--------------------------------------------------\n");
-    printf("%s\n", source);
-    printf("--------------------------------------------------\n\n");
+    Program program = parser_parse();
+    assert(program.count == 1);
+    assert(program.statements[0].type == STMT_LET);
+    assert(strcmp(program.statements[0].let_stmt.ident, "x") == 0);
+    assert(program.statements[0].let_stmt.value == 42);
 
-    // Initialize the lexer and tokenize
-    Lexer* lexer = lexer_init(source, length);
-    tokenize(lexer);
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    printf("PASS: test_parse_let_statement\n");
+}
 
-    // Print all tokens
-    printf("Tokens:\n");
-    printf("--------------------------------------------------\n");
-    for (size_t i = 0; i < lexer->tokens_count; i++) {
-        const Token* token = &lexer->tokens[i];
-        printf("%-12s | %-15s | Line %-3zu | Col %-3zu\n",
-               token->value,
-               token_type_to_string(token->type),
-               token->line,
-               token->column);
-    }
-    printf("--------------------------------------------------\n\n");
+void test_parse_return_statement() {
+    FILE* test_file = create_test_file("return 42;");
+    lexer_init(test_file);
+    parser_init();
 
-    // Initialize the parser and parse the program
-    Parser* parser = parser_init(lexer);
-    AstNode* ast = parse_program(parser);
+    Program program = parser_parse();
+    assert(program.count == 1);
+    assert(program.statements[0].type == STMT_RETURN);
+    assert(program.statements[0].ret_stmt.ident == NULL);
+    assert(program.statements[0].ret_stmt.value == 42);
 
-    // Check if parsing was successful
-    if (parser->hadError) {
-        printf("Parsing failed with errors.\n");
-    } else {
-        printf("Parsing successful! AST:\n");
-        printf("--------------------------------------------------\n");
-        print_ast(ast, 0);
-        printf("--------------------------------------------------\n");
-    }
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    printf("PASS: test_parse_return_statement\n");
+}
 
-    // Clean up
-    free_ast(ast);
-    parser_free(parser);
-    lexer_free(lexer);
-    free(source);
+void test_parse_return_identifier() {
+    FILE* test_file = create_test_file("let x = 42; return x;");
+    lexer_init(test_file);
+    parser_init();
 
-    return parser->hadError ? EXIT_FAILURE : EXIT_SUCCESS;
+    Program program = parser_parse();
+    assert(program.count == 2);
+    assert(program.statements[1].type == STMT_RETURN);
+    assert(strcmp(program.statements[1].ret_stmt.ident, "x") == 0);
+
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    printf("PASS: test_parse_return_identifier\n");
+}
+
+void test_multiple_statements() {
+    FILE* test_file = create_test_file("let x = 10; let y = 20; return y;");
+    lexer_init(test_file);
+    parser_init();
+
+    Program program = parser_parse();
+    assert(program.count == 3);
+
+    program_free(&program);
+    parser_cleanup();
+    lexer_cleanup();
+    printf("PASS: test_multiple_statements\n");
+}
+
+int main() {
+    printf("Running parser tests...\n");
+
+    test_parse_let_statement();
+    test_parse_return_statement();
+    test_parse_return_identifier();
+    test_multiple_statements();
+
+    printf("All parser tests passed!\n");
+    return 0;
 }

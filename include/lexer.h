@@ -11,7 +11,14 @@ typedef enum {
     TOKEN_UNKNOWN,
     TOKEN_LET,
     TOKEN_IDENT,
-    TOKEN_EQ
+    TOKEN_EQ,
+    TOKEN_PLUS,
+    TOKEN_MINUS,
+    TOKEN_MUL,
+    TOKEN_DIV,
+    TOKEN_MOD,
+    TOKEN_LPAREN,
+    TOKEN_RPAREN,
 } Ttype;
 
 typedef struct {
