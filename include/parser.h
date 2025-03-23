@@ -2,8 +2,11 @@
 #define PARSER_H
 #include "lexer.h"
 
+// Forward declaration first
+typedef struct Statement Statement;
+
 typedef enum {
-    STMT_RETURN, STMT_LET,
+    STMT_RETURN, STMT_LET, STMT_IF
 } StatementType;
 
 typedef struct {
@@ -13,25 +16,30 @@ typedef struct {
 } Expression;
 
 typedef struct {
-    int value;
-    char* ident;
     Expression* expr;
 } ReturnStatement;
 
 typedef struct {
     char* ident;
-    int value;
-    char* ident_value;
     Expression* expr;
 } LetStatement;
 
 typedef struct {
+    Expression* condition;
+    Statement* if_block;
+    int if_count;
+    Statement* else_block;
+    int else_count;
+} IfStatement;
+
+struct Statement {
     StatementType type;
     union {
         ReturnStatement ret_stmt;
         LetStatement let_stmt;
+        IfStatement if_stmt;
     };
-} Statement;
+};
 
 typedef struct {
     Statement* statements;
@@ -57,5 +65,8 @@ static Expression* parse_expression();
 //Free the resources used by the expression
 void expression_free(Expression* expr);
 
-
+static Statement parse_if_statement();
+static Program parser_parse_block();
+static Program parse_block_statements();
+void if_statement_free(const IfStatement* if_stmt);
 #endif // PARSER_H
