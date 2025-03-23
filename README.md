@@ -9,7 +9,8 @@ Cor is a simple and minimalistic compiler designed to handle mathematical operat
 - **Integer Literals**: Supports integer literals and basic arithmetic operations.
 - **Variable Assignments**: Implements variable declaration using the `let` keyword.
 - **Return Statements**: Supports returning values using the `ret` keyword.
-- **Control Flow (Future Work)**: Planned support for `if` statements and loops.
+- **Conditionals**: Implements `if` and `if-else` statements.
+- **Logical Operators**: Supports `&&`, `||`, and `!` in expressions.
 - **Minimalistic Design**: Lightweight and simple, focusing on core compiler functionality.
 
 ---
@@ -58,7 +59,11 @@ To use Cor, write a simple program and run it through the compiler. Example:
 ```cor
 let x = 10;
 let y = 20;
-ret x + y;
+if (x < y) {
+    ret x + y;
+} else {
+    ret x - y;
+}
 ```
 
 The compiler parses the code, generates C output, and compiles it using GCC.
@@ -68,19 +73,22 @@ The compiler parses the code, generates C output, and compiles it using GCC.
 ## Implementation
 
 ### 1. Lexical Analysis
-- Tokenizes keywords (`let`, `ret`), identifiers, operators, numbers, and delimiters.
+- Tokenizes keywords (`let`, `ret`, `if`, `else`), identifiers, operators, numbers, and delimiters.
 - Uses safer `strtol()` for number parsing.
 
 ### 2. Parsing
+- Uses a **linear array of statements** instead of an AST.
 - Implements a recursive descent parser.
-- Builds an Abstract Syntax Tree (AST) for statements and expressions.
+- Supports **if-else statements** and logical operators (`&&`, `||`, `!`).
+- Stores expressions as token sequences for simplicity.
 
 ### 3. Code Generation
-- Converts AST into equivalent C code.
+- Converts the **linear array of statements** into equivalent C code.
 - Wraps expressions in parentheses to preserve operator precedence.
+- Generates **if-else blocks** correctly.
 
 ### 4. Compilation Pipeline
-- Reads the source file, tokenizes input, generates an AST, converts it to C, and invokes GCC.
+- Reads the source file, tokenizes input, parses statements, converts them to C, and invokes GCC.
 
 ---
 
@@ -100,10 +108,10 @@ Contributions are welcome! If you want to contribute to Cor, fork the repository
 
 ## Future Improvements
 
-- **Support for conditionals (`if`/`else`)**
-- **Implement functions and scopes**
-- **Add more data types (strings, booleans)**
-- **Improve error handling**
+- **Implement loops** (`while`, `for`).
+- **Add support for functions and scopes.**
+- **Support additional data types (strings, booleans).**
+- **Improve error handling and debugging support.**
 
 ---
 

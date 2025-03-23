@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-
 #include <ctype.h>
 #include "lexer.h"
 
@@ -54,14 +53,14 @@ static Token create_token(const Ttype type, char* value) {
     return token;
 }
 
-Token lexer_next_token(const Token current_token) {
+Token lexer_next_token() {
     skip_whitespace();
 
     if (current_char == EOF) {
         return create_token(TOKEN_EOF, nullptr);
     }
 
-if (isalpha(current_char)) {
+    if (isalpha(current_char)) {
         char buffer[32];
         int i = 0;
 
@@ -78,22 +77,36 @@ if (isalpha(current_char)) {
         if (strcmp(buffer, "ret") == 0) {
             return create_token(TOKEN_RETURN, allocate_string(buffer));
         }
-        if (strcmp(buffer, "return") == 0 || strcmp(buffer, "int") == 0) {
+        if (strcmp(buffer, "if") == 0) {
+            return create_token(TOKEN_IF, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "els") == 0) {
+            return create_token(TOKEN_ELSE, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "and") == 0) {
+            return create_token(TOKEN_AND, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "or") == 0) {
+            return create_token(TOKEN_OR, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "return") == 0 ||
+            strcmp(buffer, "int") == 0    ||
+            strcmp(buffer, "long") == 0   ||
+            strcmp(buffer, "char") == 0   ||
+            strcmp(buffer, "short") == 0  ||
+            strcmp(buffer, "float") == 0  ||
+            strcmp(buffer, "double") == 0 ||
+            strcmp(buffer, "void") == 0   ||
+            strcmp(buffer, "for") == 0    ||
+            strcmp(buffer, "while") == 0){
             fprintf(stderr, "Syntax error: Cannot use reserved keyword at line %d, column %d\n",
                     current_line, current_column);
             exit(EXIT_FAILURE);
         }
 
         return create_token(TOKEN_IDENT, allocate_string(buffer));
-}
-
-    if (current_char == '=') {
-        char buffer[2];
-        buffer[0] = current_char;
-        buffer[1] = '\0';
-        advance();
-        return create_token(TOKEN_EQ, allocate_string(buffer));
     }
+
     // Check for numbers
     if (isdigit(current_char)) {
         char buffer[32];
@@ -107,16 +120,23 @@ if (isalpha(current_char)) {
 
         return create_token(TOKEN_NUMBER, allocate_string(buffer));
     }
-    //Operators
+    //Operators and delimiters
     if (current_char == '+' ||
         current_char == '-' ||
         current_char == '*' ||
         current_char == '/' ||
         current_char == '%' ||
         current_char == '(' ||
-        current_char == ')') {
-
-        char buffer[2];
+        current_char == ')' ||
+        current_char == ';' ||
+        current_char == '=' ||
+        current_char == '<' ||
+        current_char == '>' ||
+        current_char == '!' ||
+        current_char == '{' ||
+        current_char == '}') {
+        bool advanced = false;
+        char buffer[3];
         buffer[0] = current_char;
         buffer[1] = '\0';
 
@@ -129,40 +149,72 @@ if (isalpha(current_char)) {
             case '%': type = TOKEN_MOD; break;
             case '(': type = TOKEN_LPAREN; break;
             case ')': type = TOKEN_RPAREN; break;
+            case ';': type = TOKEN_SEMICOLON; break;
+            case '{': type = TOKEN_LBRACE; break;
+            case '}': type = TOKEN_RBRACE; break;
+            case '=':
+                advance();
+                if (current_char == '=') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_EQEQ;
+                    advance();
+                } else {
+                    type = TOKEN_EQ;
+                    advanced = true;
+                }
+                break;
+            case '<':
+                advance();
+                if (current_char == '=') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_LTE;
+                    advance();
+                } else {
+                    type = TOKEN_LT;
+                    advanced = true;
+                }
+                break;
+            case '>':
+                advance();
+                if (current_char == '=') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_GTE;
+                    advance();
+                } else {
+                    type = TOKEN_GT;
+                    advanced = true;
+                }
+                break;
+            case '!':
+                advance();
+                if (current_char == '=') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_NEQ;
+                    advance();
+                } else {
+                    type = TOKEN_NOT;
+                    advanced = true;
+                }
+                break;
             default: type = TOKEN_UNKNOWN;
         }
 
-        advance();
+        if (!advanced) advance();
         return create_token(type, allocate_string(buffer));
-    }
-    // Check for semicolon
-    if (current_char == ';') {
-        char* value = malloc(2);
-        if (value == NULL) {
-            fprintf(stderr, "Memory allocation error\n");
-            exit(1);
-        }
-        value[0] = current_char;
-        value[1] = '\0';
-        advance();
-        return create_token(TOKEN_SEMICOLON, value);
     }
 
     // Unknown token
-    char* value = malloc(2);
-    if (value == NULL) {
-        fprintf(stderr, "Memory allocation error\n");
-        exit(1);
-    }
+    char value[2];
     value[0] = current_char;
     value[1] = '\0';
     advance();
-    return create_token(TOKEN_UNKNOWN, value);
+    return create_token(TOKEN_UNKNOWN, allocate_string(value));
 }
 
-void lexer_cleanup() {
-    // Nothing to clean up for now
-}
 
 const char* token_type_to_string(const Ttype type) {
     switch (type) {
@@ -181,6 +233,19 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_MOD: return "MOD";
         case TOKEN_LPAREN: return "LPAREN";
         case TOKEN_RPAREN: return "RPAREN";
+        case TOKEN_EQEQ: return "EQEQ";
+        case TOKEN_NEQ: return "NEQ";
+        case TOKEN_LT: return "LT";
+        case TOKEN_GT: return "GT";
+        case TOKEN_LTE: return "LTE";
+        case TOKEN_GTE: return "GTE";
+        case TOKEN_AND: return "AND";
+        case TOKEN_OR: return "OR";
+        case TOKEN_NOT: return "NOT";
+        case TOKEN_IF: return "IF";
+        case TOKEN_ELSE: return "ELSE";
+        case TOKEN_LBRACE: return "LBRACE";
+        case TOKEN_RBRACE: return "RBRACE";
         default: return "UNDEFINED";
     }
 }
@@ -190,4 +255,8 @@ void token_free(Token* token) {
         free(token->value);
         token->value = nullptr;
     }
+}
+
+void lexer_cleanup() {
+    // Nothing to clean up for now
 }

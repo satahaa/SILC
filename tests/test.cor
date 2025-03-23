@@ -1,4 +1,11 @@
 let r = 4286;
-let k = 10221;
+let k = r + 10221;
 let l = r * k + 29997109;
-ret l;
+if l >= r and r == 4286
+{
+    ret l + 25;
+}
+els
+{
+    ret 86;
+}

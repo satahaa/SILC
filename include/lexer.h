@@ -17,8 +17,21 @@ typedef enum {
     TOKEN_MUL,
     TOKEN_DIV,
     TOKEN_MOD,
+    TOKEN_EQEQ,
+    TOKEN_NEQ,
+    TOKEN_LT,
+    TOKEN_GT,
+    TOKEN_LTE,
+    TOKEN_GTE,
+    TOKEN_AND,
+    TOKEN_OR,
+    TOKEN_NOT,
     TOKEN_LPAREN,
     TOKEN_RPAREN,
+    TOKEN_IF,
+    TOKEN_ELSE,
+    TOKEN_LBRACE,
+    TOKEN_RBRACE
 } Ttype;
 
 typedef struct {
@@ -32,7 +45,7 @@ typedef struct {
 void lexer_init(FILE* source_file);
 
 // Get the next token from the source
-Token lexer_next_token(const Token current_token);
+Token lexer_next_token();
 
 // Free resources used by the lexer
 void lexer_cleanup();
