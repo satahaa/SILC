@@ -57,11 +57,11 @@ Cor is a simple and minimalistic compiler designed to handle mathematical operat
 To use Cor, write a simple program and run it through the compiler. Example:
 
 ```cor
-let x = 10;
-let y = 20;
-if (x < y) {
+let x = 10 + 35;
+let y = 20 + 2 * x;
+if x < y and x == 45 {
     ret x + y;
-} else {
+} els {
     ret x - y;
 }
 ```
