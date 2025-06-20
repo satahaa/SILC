@@ -45,7 +45,6 @@ int main(const int argc, const char** argv) {
     codegen_cleanup();
     program_free(&program);
     parser_cleanup();
-    lexer_cleanup();
     fclose(source);
     // Check if GCC is installed
     if (system("gcc --version > nul 2>&1") != 0) {
@@ -62,7 +61,7 @@ int main(const int argc, const char** argv) {
         exit(EXIT_FAILURE);
     }
     // Clean up intermediate files
-    remove(c_file);
+    //remove(c_file);
 
     printf("Compilation completed successfully. Executable created: %s\n", exe_file);
 

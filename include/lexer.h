@@ -31,7 +31,8 @@ typedef enum {
     TOKEN_IF,
     TOKEN_ELSE,
     TOKEN_LBRACE,
-    TOKEN_RBRACE
+    TOKEN_RBRACE,
+    TOKEN_OUT
 } Ttype;
 
 typedef struct {

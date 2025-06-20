@@ -139,6 +139,9 @@ static Program parser_parse_block() {
             case TOKEN_IF:
                 stmt = parse_if_statement();
                 break;
+            case TOKEN_OUT:
+                stmt = parse_out_statement();
+                break;
             default:
                 fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
                         token_type_to_string(current_token.type),
@@ -200,6 +203,22 @@ static Statement parse_if_statement() {
 
     return stmt;
 }
+
+static Statement parse_out_statement() {
+    Statement stmt;
+    stmt.type = STMT_OUT;
+
+    // Consume 'out' token
+    eat(TOKEN_OUT);
+
+    // Parse the expression to be printed
+    stmt.out_stmt.expr = parse_expression();
+
+    // Expect semicolon
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
 Program parser_parse() {
     Program program;
     program.count = 0;
@@ -219,6 +238,9 @@ Program parser_parse() {
             case TOKEN_IF:
                 stmt = parse_if_statement();
                 break;
+            case TOKEN_OUT:
+                stmt = parse_out_statement();
+                break;
             default:
                 fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
                         token_type_to_string(current_token.type),
@@ -233,7 +255,7 @@ Program parser_parse() {
             if (tmp == NULL) {
                 free(program.statements);
                 fprintf(stderr, "Memory allocation error\n");
-                exit(1);
+                exit(EXIT_FAILURE);
             }
             program.statements = tmp;
         }
@@ -263,6 +285,10 @@ void program_free(Program* program) {
                 break;
             case STMT_IF:
                 if_statement_free(&program->statements[i].if_stmt);
+                break;
+            case STMT_OUT:
+                if (program->statements[i].out_stmt.expr)
+                    expression_free(program->statements[i].out_stmt.expr);
                 break;
         }
     }
@@ -311,6 +337,10 @@ void if_statement_free(const IfStatement* if_stmt) {
             case STMT_IF:
                 if_statement_free(&if_stmt->if_block[i].if_stmt);
                 break;
+            case STMT_OUT:
+                if (if_stmt->if_block[i].out_stmt.expr)
+                    expression_free(if_stmt->if_block[i].out_stmt.expr);
+                break;
         }
     }
     free(if_stmt->if_block);
@@ -330,6 +360,10 @@ void if_statement_free(const IfStatement* if_stmt) {
                 break;
             case STMT_IF:
                 if_statement_free(&if_stmt->else_block[i].if_stmt);
+                break;
+            case STMT_OUT:
+                if (if_stmt->else_block[i].out_stmt.expr)
+                    expression_free(if_stmt->else_block[i].out_stmt.expr);
                 break;
         }
     }
