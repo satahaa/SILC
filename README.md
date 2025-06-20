@@ -10,7 +10,12 @@ Cor is a simple and minimalistic compiler designed to handle mathematical operat
 - **Variable Assignments**: Implements variable declaration using the `let` keyword.
 - **Return Statements**: Supports returning values using the `ret` keyword.
 - **Conditionals**: Implements `if` and `if-else` statements.
-- **Logical Operators**: Supports `&&`, `||`, and `!` in expressions.
+- **Arithmetic Operations**: Supports addition, subtraction, multiplication, and division.
+- **Operator Precedence**: Handles operator precedence correctly, ensuring that expressions are evaluated in the right order.
+- **Parentheses Handling**: Allows parentheses to override operator precedence.
+- **Output Statements**: Uses `out` keyword to print results.
+- **Error Handling**: Basic error handling for syntax errors and invalid expressions.
+- **Logical Operators**: Supports `and`, `or`, and `!` in expressions.
 - **Minimalistic Design**: Lightweight and simple, focusing on core compiler functionality.
 
 ---
@@ -60,9 +65,9 @@ To use Cor, write a simple program and run it through the compiler. Example:
 let x = 10 + 35;
 let y = 20 + 2 * x;
 if x < y and x == 45 {
-    ret x + y;
+    out x + y;
 } els {
-    ret x - y;
+    out x - y;
 }
 ```
 
