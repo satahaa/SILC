@@ -34,7 +34,7 @@ static void skip_whitespace() {
 static char* allocate_string(const char* str) {
 
     const size_t len = strlen(str);
-    const auto result = (char*)malloc(len + 1);
+    char* result = malloc(len + 1);
     if (result == NULL) {
         fprintf(stderr, "Memory allocation error\n");
         exit(1);
@@ -89,6 +89,9 @@ Token lexer_next_token() {
         if (strcmp(buffer, "or") == 0) {
             return create_token(TOKEN_OR, allocate_string(buffer));
         }
+        if (strcmp(buffer, "out") == 0) {
+            return create_token(TOKEN_OUT, allocate_string(buffer));
+        }
         if (strcmp(buffer, "return") == 0 ||
             strcmp(buffer, "int") == 0    ||
             strcmp(buffer, "long") == 0   ||
@@ -98,7 +101,63 @@ Token lexer_next_token() {
             strcmp(buffer, "double") == 0 ||
             strcmp(buffer, "void") == 0   ||
             strcmp(buffer, "for") == 0    ||
-            strcmp(buffer, "while") == 0){
+            strcmp(buffer, "while") == 0  ||
+            strcmp(buffer, "switch") == 0 ||
+            strcmp(buffer, "case") == 0   ||
+            strcmp(buffer, "default") == 0||
+            strcmp(buffer, "break") == 0  ||
+            strcmp(buffer, "continue") == 0 ||
+            strcmp(buffer, "goto") == 0   ||
+            strcmp(buffer, "sizeof") == 0 ||
+            strcmp(buffer, "struct") == 0 ||
+            strcmp(buffer, "union") == 0  ||
+            strcmp(buffer, "typedef") == 0||
+            strcmp(buffer, "static") == 0 ||
+            strcmp(buffer, "extern") == 0 ||
+            strcmp(buffer, "const") == 0  ||
+            strcmp(buffer, "volatile") == 0 ||
+            strcmp(buffer, "register") == 0 ||
+            strcmp(buffer, "inline") == 0 ||
+            strcmp(buffer, "asm") == 0    ||
+            strcmp(buffer, "auto") == 0   ||
+            strcmp(buffer, "signed") == 0 ||
+            strcmp(buffer, "unsigned") == 0||
+            strcmp(buffer, "true") == 0   ||
+            strcmp(buffer, "false") == 0  ||
+            strcmp(buffer, "null") == 0   ||
+            strcmp(buffer, "class") == 0  ||
+            strcmp(buffer, "public") == 0 ||
+            strcmp(buffer, "private") == 0||
+            strcmp(buffer, "protected") == 0 ||
+            strcmp(buffer, "this") == 0   ||
+            strcmp(buffer, "namespace") == 0 ||
+            strcmp(buffer, "using") == 0  ||
+            strcmp(buffer, "template") == 0 ||
+            strcmp(buffer, "new") == 0    ||
+            strcmp(buffer, "delete") == 0 ||
+            strcmp(buffer, "try") == 0    ||
+            strcmp(buffer, "catch") == 0  ||
+            strcmp(buffer, "throw") == 0  ||
+            strcmp(buffer, "import") == 0 ||
+            strcmp(buffer, "export") == 0 ||
+            strcmp(buffer, "assert") == 0 ||
+            strcmp(buffer, "enum") == 0   ||
+            strcmp(buffer, "interface") == 0 ||
+            strcmp(buffer, "final") == 0  ||
+            strcmp(buffer, "finalize") == 0 ||
+            strcmp(buffer, "synchronized") == 0 ||
+            strcmp(buffer, "let") == 0    ||
+            strcmp(buffer, "out") == 0    ||
+            strcmp(buffer, "else") == 0   ||
+            strcmp(buffer, "not") == 0    ||
+            strcmp(buffer, "xor") == 0    ||
+            strcmp(buffer, "ret") == 0    ||
+            strcmp(buffer, "include") == 0||
+            strcmp(buffer, "define") == 0 ||
+            strcmp(buffer, "undef") == 0  ||
+            strcmp(buffer, "pragma") == 0
+        )
+        {
             fprintf(stderr, "Syntax error: Cannot use reserved keyword at line %d, column %d\n",
                     current_line, current_column);
             exit(EXIT_FAILURE);
@@ -246,6 +305,7 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_ELSE: return "ELSE";
         case TOKEN_LBRACE: return "LBRACE";
         case TOKEN_RBRACE: return "RBRACE";
+        case TOKEN_OUT: return "OUT";
         default: return "UNDEFINED";
     }
 }
@@ -255,8 +315,4 @@ void token_free(Token* token) {
         free(token->value);
         token->value = nullptr;
     }
-}
-
-void lexer_cleanup() {
-    // Nothing to clean up for now
 }

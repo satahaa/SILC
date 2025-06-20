@@ -6,7 +6,7 @@
 typedef struct Statement Statement;
 
 typedef enum {
-    STMT_RETURN, STMT_LET, STMT_IF
+    STMT_RETURN, STMT_LET, STMT_IF, STMT_OUT
 } StatementType;
 
 typedef struct {
@@ -31,15 +31,19 @@ typedef struct {
     Statement* else_block;
     int else_count;
 } IfStatement;
+typedef struct {
+    Expression* expr;
+} OutStatement;
 
-struct Statement {
+typedef struct Statement {
     StatementType type;
     union {
         ReturnStatement ret_stmt;
         LetStatement let_stmt;
         IfStatement if_stmt;
+        OutStatement out_stmt;
     };
-};
+} Statement;
 
 typedef struct {
     Statement* statements;
@@ -66,6 +70,7 @@ static Expression* parse_expression();
 void expression_free(Expression* expr);
 
 static Statement parse_if_statement();
+static Statement parse_out_statement();
 static Program parser_parse_block();
 static Program parse_block_statements();
 void if_statement_free(const IfStatement* if_stmt);
