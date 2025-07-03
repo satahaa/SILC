@@ -36,7 +36,9 @@ static Expression* parse_expression() {
     // Parse tokens until semicolon or unexpected token
     while (current_token.type != TOKEN_SEMICOLON &&
            current_token.type != TOKEN_EOF       &&
-           current_token.type != TOKEN_RBRACE) {
+           current_token.type != TOKEN_RBRACE    &&
+           current_token.type != TOKEN_COLON     &&
+           current_token.type != TOKEN_LBRACE) {
 
         if (current_token.type == TOKEN_NUMBER ||
             current_token.type == TOKEN_IDENT  ||
@@ -46,6 +48,8 @@ static Expression* parse_expression() {
             current_token.type == TOKEN_DIV    ||
             current_token.type == TOKEN_LPAREN ||
             current_token.type == TOKEN_RPAREN ||
+            current_token.type == TOKEN_MOD    ||
+            current_token.type == TOKEN_EQ     ||
             current_token.type == TOKEN_EQEQ   ||
             current_token.type == TOKEN_NEQ    ||
             current_token.type == TOKEN_LT     ||
@@ -54,28 +58,36 @@ static Expression* parse_expression() {
             current_token.type == TOKEN_GTE    ||
             current_token.type == TOKEN_AND    ||
             current_token.type == TOKEN_OR     ||
-            current_token.type == TOKEN_NOT) {
+            current_token.type == TOKEN_NOT    ||
+            current_token.type == TOKEN_STRING ||
+            current_token.type == TOKEN_XOR    ||
+            current_token.type == TOKEN_BITWISE_OR ||
+            current_token.type == TOKEN_BITWISE_AND||
+            current_token.type == TOKEN_LSHIFT ||
+            current_token.type == TOKEN_RSHIFT ||
+            current_token.type == TOKEN_BITWISE_NOT) {
 
             // Track parentheses balance
-            if (current_token.type == TOKEN_LPAREN) {
-                paren_count++;
-            } else if (current_token.type == TOKEN_RPAREN) {
-                paren_count--;
-                if (paren_count < 0) {
-                    fprintf(stderr, "Syntax error: Unbalanced parentheses at line %d, column %d\n",
-                           current_token.line, current_token.column);
-                    exit(EXIT_FAILURE);
+                if (current_token.type == TOKEN_LPAREN) {
+                    paren_count++;
+                } else if (current_token.type == TOKEN_RPAREN) {
+                    paren_count--;
+                    if (paren_count < 0) {
+                        fprintf(stderr, "Syntax error: Unbalanced parentheses at line %d, column %d\n",
+                               current_token.line, current_token.column);
+                        exit(EXIT_FAILURE);
+                    }
                 }
+
+                // Store token information
+                expr->token_types[expr->len] = current_token.type;
+                expr->token_values[expr->len] = strdup(current_token.value);
+                expr->len++;
+
+                // Get next token
+                eat(current_token.type);
             }
-
-            // Store token information
-            expr->token_types[expr->len] = current_token.type;
-            expr->token_values[expr->len] = strdup(current_token.value);
-            expr->len++;
-
-            // Get next token
-            eat(current_token.type);
-            } else break;
+        else break;
     }
 
     // Check for balanced parentheses
@@ -97,8 +109,14 @@ static Statement parse_return_statement() {
     // Consume 'ret' token
     eat(TOKEN_RETURN);
 
-    // Check if there's an expression before semicolon
+
     if (current_token.type != TOKEN_SEMICOLON) {
+        // Forbid returning a string literal directly
+        if (current_token.type == TOKEN_STRING) {
+            fprintf(stderr, "Syntax error: Cannot return a string at line %d, column %d\n",
+                    current_token.line, current_token.column);
+            exit(EXIT_FAILURE);
+        }
         stmt.ret_stmt.expr = parse_expression();
     }
     // Expect semicolon
@@ -120,6 +138,39 @@ static Statement parse_let_statement() {
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
+
+static Statement parse_for_statement() {
+    Statement stmt;
+    stmt.type = STMT_FOR;
+    stmt.for_stmt.start_expr = NULL;
+    stmt.for_stmt.end_expr = NULL;
+    stmt.for_stmt.body = NULL;
+    stmt.for_stmt.body_count = 0;
+
+    // Consume 'for' token
+    eat(TOKEN_FOR);
+
+    // Parse start expression (iterator)
+    stmt.for_stmt.start_expr = parse_expression();
+
+    // Consume ':' token
+    eat(TOKEN_COLON);
+
+    // Parse end expression (the condition)
+    stmt.for_stmt.end_expr = parse_expression();
+
+    // Parse for block
+    eat(TOKEN_LBRACE);
+
+    const Program block = parser_parse_block();
+    stmt.for_stmt.body = block.statements;
+    stmt.for_stmt.body_count = block.count;
+
+    eat(TOKEN_RBRACE);
+
+    return stmt;
+}
+
 static Program parser_parse_block() {
     Program block;
     block.count = 0;
@@ -142,11 +193,19 @@ static Program parser_parse_block() {
             case TOKEN_OUT:
                 stmt = parse_out_statement();
                 break;
+            case TOKEN_FOR:
+                stmt = parse_for_statement();
+                break;
+            case TOKEN_IDENT:
+            case TOKEN_NUMBER:
+            case TOKEN_LPAREN:
+                stmt = parse_expression_statement();
+                break;
             default:
-                fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
-                        token_type_to_string(current_token.type),
-                        current_token.line,
-                        current_token.column);
+                fprintf(stderr, "Syntax error: Unexpected token %s in block at line %d, column %d\n",
+                                        token_type_to_string(current_token.type),
+                                        current_token.line,
+                                        current_token.column);
                 exit(EXIT_FAILURE);
         }
 
@@ -164,41 +223,33 @@ static Program parser_parse_block() {
         block.statements[block.count++] = stmt;
     }
 
-    eat(TOKEN_RBRACE);
     return block;
 }
 static Statement parse_if_statement() {
     Statement stmt;
     stmt.type = STMT_IF;
-    stmt.if_stmt.condition = nullptr;
-    stmt.if_stmt.if_block = nullptr;
-    stmt.if_stmt.if_count = 0;
-    stmt.if_stmt.else_block = nullptr;
-    stmt.if_stmt.else_count = 0;
 
-    // Consume 'if' token
     eat(TOKEN_IF);
 
-    // Parse condition
     stmt.if_stmt.condition = parse_expression();
 
-    // Parse if block
     eat(TOKEN_LBRACE);
+    Program true_block = parser_parse_block();
+    stmt.if_stmt.if_block = true_block.statements;
+    stmt.if_stmt.if_count = true_block.count;
+    eat(TOKEN_RBRACE);
 
-    // Parse statements in if block
-    const Program if_block = parser_parse_block();
-    stmt.if_stmt.if_block = if_block.statements;
-    stmt.if_stmt.if_count = if_block.count;
-
-    // Check for else block
     if (current_token.type == TOKEN_ELSE) {
         eat(TOKEN_ELSE);
         eat(TOKEN_LBRACE);
-
-        // Parse statements in else block
-        const Program else_block = parser_parse_block();
-        stmt.if_stmt.else_block = else_block.statements;
-        stmt.if_stmt.else_count = else_block.count;
+        Program false_block = parser_parse_block();
+        stmt.if_stmt.else_block = false_block.statements;
+        stmt.if_stmt.else_count = false_block.count;
+        eat(TOKEN_RBRACE);
+    } else {
+        // Explicitly set the else branch to NULL when it's not present.
+        stmt.if_stmt.else_block = NULL;
+        stmt.if_stmt.else_count = 0;
     }
 
     return stmt;
@@ -215,6 +266,14 @@ static Statement parse_out_statement() {
     stmt.out_stmt.expr = parse_expression();
 
     // Expect semicolon
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
+static Statement parse_expression_statement() {
+    Statement stmt;
+    stmt.type = STMT_EXPR;
+    stmt.expr_stmt.expr = parse_expression();
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
@@ -240,6 +299,14 @@ Program parser_parse() {
                 break;
             case TOKEN_OUT:
                 stmt = parse_out_statement();
+                break;
+            case TOKEN_FOR:
+                stmt = parse_for_statement();
+                break;
+            case TOKEN_IDENT: // Explicitly handle expression statements starting with an identifier
+            case TOKEN_NUMBER:
+            case TOKEN_LPAREN:
+                stmt = parse_expression_statement();
                 break;
             default:
                 fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
@@ -289,6 +356,13 @@ void program_free(Program* program) {
             case STMT_OUT:
                 if (program->statements[i].out_stmt.expr)
                     expression_free(program->statements[i].out_stmt.expr);
+                break;
+            case STMT_EXPR:
+                if (program->statements[i].expr_stmt.expr)
+                    expression_free(program->statements[i].expr_stmt.expr);
+                break;
+            case STMT_FOR: // Add this case
+                for_statement_free(&program->statements[i].for_stmt);
                 break;
         }
     }
@@ -341,6 +415,12 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->if_block[i].out_stmt.expr)
                     expression_free(if_stmt->if_block[i].out_stmt.expr);
                 break;
+            case STMT_EXPR:
+                if (if_stmt->if_block[i].expr_stmt.expr)
+                    expression_free(if_stmt->if_block[i].expr_stmt.expr);
+                break;
+            default:
+                fprintf(stderr, "Unknown if_statement type\n");
         }
     }
     free(if_stmt->if_block);
@@ -365,7 +445,55 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->else_block[i].out_stmt.expr)
                     expression_free(if_stmt->else_block[i].out_stmt.expr);
                 break;
+            case STMT_EXPR:
+                if (if_stmt->else_block[i].expr_stmt.expr)
+                    expression_free(if_stmt->else_block[i].expr_stmt.expr);
+                break;
+            default:
+                fprintf(stderr, "Unknown else_statement type\n");
         }
     }
     free(if_stmt->else_block);
+}
+
+void for_statement_free(const ForStatement* for_stmt) {
+    if (for_stmt->start_expr) {
+        expression_free(for_stmt->start_expr);
+    }
+    if (for_stmt->end_expr) {
+        expression_free(for_stmt->end_expr);
+    }
+
+    // Free body statements
+    for (int i = 0; i < for_stmt->body_count; i++) {
+        switch (for_stmt->body[i].type) {
+            case STMT_RETURN:
+                if (for_stmt->body[i].ret_stmt.expr)
+                    expression_free(for_stmt->body[i].ret_stmt.expr);
+                break;
+            case STMT_LET:
+                if (for_stmt->body[i].let_stmt.ident)
+                    free(for_stmt->body[i].let_stmt.ident);
+                if (for_stmt->body[i].let_stmt.expr)
+                    expression_free(for_stmt->body[i].let_stmt.expr);
+                break;
+            case STMT_IF:
+                if_statement_free(&for_stmt->body[i].if_stmt);
+                break;
+            case STMT_FOR:
+                for_statement_free(&for_stmt->body[i].for_stmt);
+                break;
+            case STMT_OUT:
+                if (for_stmt->body[i].out_stmt.expr)
+                    expression_free(for_stmt->body[i].out_stmt.expr);
+                break;
+            case STMT_EXPR:
+                if (for_stmt->body[i].expr_stmt.expr)
+                    expression_free(for_stmt->body[i].expr_stmt.expr);
+                break;
+            default:
+                fprintf(stderr, "Unknown for_statement type\n");
+        }
+    }
+    free(for_stmt->body);
 }

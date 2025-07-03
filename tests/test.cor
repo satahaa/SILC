@@ -1,16 +1,18 @@
-let x = 75;
-let y = 25;
-let z = x + y;
-let a = 100;
-let b = 50;
-let c = a - b;
-let d = z * c;
-if (d < 10) {
-    let e = d / 2;
-    let f = e + 5;
-    let g = f - 3;
-    let h = g * 4;
-    out h;
-} els {
-   out 65;
+let n = 50;
+let i = 1;
+for i : n
+{
+    let j = 2;
+    let isPrime = 1;
+    for j : j * j
+    {
+        if i % j == 0
+        {
+            isPrime = 0;
+        }
+    }
+    if isPrime == 1
+    {
+        out i;
+    }
 }
