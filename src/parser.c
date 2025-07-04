@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "parser.h"
 
 static Token current_token;
+static bool is_in_loop = false;
 
 void parser_init() {
     current_token = lexer_next_token();
@@ -150,6 +152,10 @@ static Statement parse_while_statement() {
     // Parse the condition expression
     stmt.while_stmt.condition = parse_expression();
 
+    // Set loop context for the body
+    const bool previous_loop_state = is_in_loop;
+    is_in_loop = true;
+
     // Parse the body
     eat(TOKEN_LBRACE);
     const Program block = parser_parse_block();
@@ -157,6 +163,48 @@ static Statement parse_while_statement() {
     stmt.while_stmt.body_count = block.count;
     eat(TOKEN_RBRACE);
 
+    // Restore previous loop context
+    is_in_loop = previous_loop_state;
+
+    // Check for more than one break or continue
+    int break_count = 0;
+    int continue_count = 0;
+    for (int i = 0; i < block.count; i++) {
+        if (block.statements[i].type == STMT_BREAK) break_count++;
+        if (block.statements[i].type == STMT_CONTINUE) continue_count++;
+    }
+
+    if (break_count > 1 || continue_count > 1) {
+        fprintf(stderr, "Syntax error: Only one 'brk' and one 'con' are allowed per loop scope.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return stmt;
+}
+
+static Statement parse_break_statement() {
+    if (!is_in_loop) {
+        fprintf(stderr, "Syntax error: 'brk' is only allowed inside a loop at line %d, column %d\n",
+                current_token.line, current_token.column);
+        exit(EXIT_FAILURE);
+    }
+    Statement stmt;
+    stmt.type = STMT_BREAK;
+    eat(TOKEN_BREAK);
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
+static Statement parse_continue_statement() {
+    if (!is_in_loop) {
+        fprintf(stderr, "Syntax error: 'con' is only allowed inside a loop at line %d, column %d\n",
+                current_token.line, current_token.column);
+        exit(EXIT_FAILURE);
+    }
+    Statement stmt;
+    stmt.type = STMT_CONTINUE;
+    eat(TOKEN_CONTINUE);
+    eat(TOKEN_SEMICOLON);
     return stmt;
 }
 
@@ -184,6 +232,12 @@ static Program parser_parse_block() {
                 break;
             case TOKEN_IN:
                 stmt = parse_in_statement();
+                break;
+            case TOKEN_BREAK:
+                stmt = parse_break_statement();
+                break;
+            case TOKEN_CONTINUE:
+                stmt = parse_continue_statement();
                 break;
             case TOKEN_WHILE:
                 stmt = parse_while_statement();

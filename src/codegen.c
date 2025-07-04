@@ -269,6 +269,12 @@ static void codegen_statements(const Statement* statements, const int count) {
                     fprintf(output, "scanf(\"%%lf\", &%s);\n", ident);
                 }
                 break;
+            case STMT_BREAK:
+                fprintf(output, "break;\n");
+                break;
+            case STMT_CONTINUE:
+                fprintf(output, "continue;\n");
+                break;
             case STMT_WHILE:
                 add_indent();
                 fprintf(output, "while (");

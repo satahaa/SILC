@@ -1,4 +1,10 @@
-let s = "";
-s = "Hello, World!";
-in s;
-out s;
+let i = 0;
+while 1
+{
+    i = i + 1;
+    if i == 500
+    {
+        brk;
+    }
+    out i;
+}

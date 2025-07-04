@@ -1,126 +1,156 @@
 # Cor Compiler
 
-Cor is a simple and minimalistic compiler designed to handle mathematical operations, variable assignments, return statements, and basic control flow. The project is built using C and focuses on understanding the fundamentals of compiler design and implementation.
+Cor is a simple, dynamically‑typed programming language that compiles to C. It’s designed to be easy to learn and use, with a familiar C‑like syntax. This project, written in C, walks you through the fundamentals of compiler design—from lexical analysis all the way to code generation.
 
 ---
 
 ## Features
 
-- **Integer Literals**: Supports integer literals and basic arithmetic operations.
-- **Variable Assignments**: Implements variable declaration using the `let` keyword.
-- **Return Statements**: Supports returning values using the `ret` keyword.
-- **Conditionals**: Implements `if` and `if-else` statements.
-- **Arithmetic Operations**: Supports addition, subtraction, multiplication, and division.
-- **Operator Precedence**: Handles operator precedence correctly, ensuring that expressions are evaluated in the right order.
-- **Parentheses Handling**: Allows parentheses to override operator precedence.
-- **Output Statements**: Uses `out` keyword to print results.
-- **Error Handling**: Basic error handling for syntax errors and invalid expressions.
-- **Logical Operators**: Supports `and`, `or`, and `!` in expressions.
-- **Minimalistic Design**: Lightweight and simple, focusing on core compiler functionality.
+* **Dynamic Typing**: All numbers are `double`, text is `string`. Types are inferred at first assignment.
+* **Variable Assignments**:
+
+   * `let` keyword for declaration
+   * `=` for re‑assignment
+* **Return Statements**: `ret` exits the program with a status code.
+* **Control Flow**:
+
+   * **Conditionals**: `if` and `els`
+   * **Loops**: `while`
+   * **Loop Control**: `brk` (break) and `con` (continue). Restricted to one of each per loop block.
+* **Operators**:
+
+   * Arithmetic: `+`, `-`, `*`, `/`, `%`
+   * Comparison: `==`, `!=`, `<`, `>`, `<=`, `>=`
+   * Logical: `and`, `or`, `not`
+   * Bitwise: `&`, `|`, `^`, `~`, `<<`, `>>` (operands cast to integers)
+* **Input/Output**:
+
+   * `out`: prints expressions or strings
+   * `in`: reads a number or string into a variable
+* **Parentheses Handling**: Override operator precedence with `(` and `)`
+* **Error Handling**: Basic checks for syntax errors and invalid expressions
 
 ---
 
-## Installation
+## Turing Completeness
 
-### Requirements
+Cor is Turing complete because it supports:
 
-- **C Compiler** (e.g., GCC, Clang)
-- **CMake** (for building the project)
+1. **Conditional Branching** (`if`/`els`)
+2. **Indefinite Looping** (`while`)
+3. **Memory Access** (mutable variables)
 
-### Steps
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/satahaa/Cor.git
-   ```
-2. Navigate to the project directory:
-   ```bash
-   cd Cor
-   ```
-3. Create a build directory:
-   ```bash
-   mkdir build
-   cd build
-   ```
-4. Generate build files using CMake:
-   ```bash
-   cmake ..
-   ```
-5. Build the project:
-   ```bash
-   cmake --build .
-   ```
-6. Run the compiled executable:
-   ```bash
-   ./Cor
-   ```
+> Note: Practical limits exist (e.g., fixed buffer sizes), but Cor’s core is computationally universal.
 
 ---
 
-## Usage
+# Installation
 
-To use Cor, write a simple program and run it through the compiler. Example:
+**Requirements**:
 
-```cor
-let x = 10 + 35;
-let y = 20 + 2 * x;
-if x < y and x == 45 {
-    out x + y;
-} els {
-    out x - y;
-}
+* A C compiler (GCC, Clang, etc.)
+* CMake
+
+**Build Steps**:
+
+## Clone the repo
+```bash
+git clone https://github.com/satahaa/Cor.git
+cd Cor
+```
+## Create and enter build dir
+```bash
+mkdir build && cd build
+```
+## Generate and build
+```bash
+cmake ..
+cmake --build .
+```
+## Run the compiler
+```bash
+# Usage: ./Cor path/to/your/file.cor
 ```
 
+---
+
+# Usage
+
+1. Write your Cor code in a `.cor` file.
+2. Compile it using the generated `Cor` binary.
+3. Enjoy!
+
+**Example**: sieve of Eratosthenes in Cor
+
+```cor
+let limit = 100;
+let n = 2;
+
+out "Prime numbers up to 100:\n";
+
+while n <= limit
+{
+    let is_prime = 1; 
+    let i = 2;
+
+    while i * i <= n
+    {
+        if n % i == 0
+        {
+            is_prime = 0;
+            brk;
+        }
+        i = i + 1;
+    }
+
+    if is_prime == 1
+    {
+        out n;
+    }
+
+    n = n + 1;
+}
+
+ret 0;
+```
 The compiler parses the code, generates C output, and compiles it using GCC.
 
 ---
 
 ## Implementation
 
-### 1. Lexical Analysis
-- Tokenizes keywords (`let`, `ret`, `if`, `else`), identifiers, operators, numbers, and delimiters.
-- Uses safer `strtol()` for number parsing.
+1. **Lexical Analysis**
 
-### 2. Parsing
-- Uses a **linear array of statements** instead of an AST.
-- Implements a recursive descent parser.
-- Supports **if-else statements** and logical operators (`&&`, `||`, `!`).
-- Stores expressions as token sequences for simplicity.
+   * Tokenizes keywords (`let`, `ret`, `if`, `els`, `while`, `brk`, `con`), identifiers, operators, numbers, strings, and delimiters.
+2. **Parsing**
 
-### 3. Code Generation
-- Converts the **linear array of statements** into equivalent C code.
-- Wraps expressions in parentheses to preserve operator precedence.
-- Generates **if-else blocks** correctly.
+   * Uses a recursive descent parser to build a linear array of statements.
+   * Enforces syntactical rules (e.g., `brk` and `con` only valid inside loops).
+   * Stores expressions as token sequences for simplicity.
+3. **Code Generation**
 
-### 4. Compilation Pipeline
-- Reads the source file, tokenizes input, parses statements, converts them to C, and invokes GCC.
+   * Translates the linear array of statements into equivalent C code.
+   * Emits `strcpy` calls for string assignments.
+   * Generates proper `if`/`else` blocks and `while` loops in C.
+4. **Compilation Pipeline**
 
----
-
-## Contributing
-
-Contributions are welcome! If you want to contribute to Cor, fork the repository, create a branch, and submit a pull request with your changes.
-
-### Steps to Contribute:
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-name`).
-3. Commit your changes (`git commit -m 'Add feature'`).
-4. Push to the branch (`git push origin feature-name`).
-5. Create a pull request.
+   * Reads the source file, tokenizes input, parses statements, generates C code, and invokes GCC to produce an executable.
 
 ---
 
 ## Future Improvements
 
-- **Implement loops** (`while`, `for`).
-- **Add support for functions and scopes.**
-- **Support additional data types (strings, booleans).**
-- **Improve error handling and debugging support.**
+* **String Concatenation**: Overload `+` for strings (generate `strcat`).
+* **Alternative Block Syntax**: Support Python-style `:`/`end` blocks.
+* **Functions & Scopes**: Add user-defined functions and proper variable scoping.
+* **Arrays**: Implement native array data structures.
+* **Improved Error Handling**: More descriptive messages and debug info.
+* **Comments**: Support single-line (`//`) and multi-line (`/* ... */`) comments.
+* **Standard Library**: Add common functions (e.g., `math`, `string` utilities).
+* **Documentation**: Comprehensive guides and examples.
 
 ---
 
 ## Contact
 
-If you have any questions or suggestions, feel free to open an issue or contact me at `satahaa12345@gmail.com`.
-
+Questions or suggestions? Open an issue or email me at [satahaa12345@gmail.com](mailto:satahaa12345@gmail.com).
