@@ -111,8 +111,17 @@ Token lexer_next_token() {
         if (strcmp(buffer, "out") == 0) {
             return create_token(TOKEN_OUT, allocate_string(buffer));
         }
-        if (strcmp(buffer, "for") == 0) {
-            return create_token(TOKEN_FOR, allocate_string(buffer));
+        if (strcmp(buffer, "while") == 0){
+            return create_token(TOKEN_WHILE, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "in") == 0) {
+            return create_token(TOKEN_IN, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "brk") == 0) {
+            return create_token(TOKEN_BREAK, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "con") == 0) {
+            return create_token(TOKEN_CONTINUE, allocate_string(buffer));
         }
         if (strcmp(buffer, "return") == 0 ||
             strcmp(buffer, "int") == 0    ||
@@ -123,7 +132,6 @@ Token lexer_next_token() {
             strcmp(buffer, "double") == 0 ||
             strcmp(buffer, "void") == 0   ||
             strcmp(buffer, "for") == 0    ||
-            strcmp(buffer, "while") == 0  ||
             strcmp(buffer, "switch") == 0 ||
             strcmp(buffer, "case") == 0   ||
             strcmp(buffer, "default") == 0||
@@ -168,12 +176,9 @@ Token lexer_next_token() {
             strcmp(buffer, "final") == 0  ||
             strcmp(buffer, "finalize") == 0 ||
             strcmp(buffer, "synchronized") == 0 ||
-            strcmp(buffer, "let") == 0    ||
-            strcmp(buffer, "out") == 0    ||
             strcmp(buffer, "else") == 0   ||
             strcmp(buffer, "not") == 0    ||
             strcmp(buffer, "xor") == 0    ||
-            strcmp(buffer, "ret") == 0    ||
             strcmp(buffer, "include") == 0||
             strcmp(buffer, "define") == 0 ||
             strcmp(buffer, "undef") == 0  ||
@@ -374,7 +379,8 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_LSHIFT: return "LSHIFT";
         case TOKEN_RSHIFT: return "RSHIFT";
         case TOKEN_BITWISE_NOT: return "BITWISE_NOT";
-        case TOKEN_FOR: return "FOR";
+        case TOKEN_WHILE: return "WHILE";
+        case TOKEN_IN: return "IN";
         case TOKEN_COLON: return "COLON";
 
         default: return "UNDEFINED";

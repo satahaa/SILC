@@ -40,8 +40,11 @@ typedef enum {
     TOKEN_LSHIFT,
     TOKEN_RSHIFT,
     TOKEN_BITWISE_NOT,
-    TOKEN_FOR,
-    TOKEN_COLON
+    TOKEN_COLON,
+    TOKEN_WHILE,
+    TOKEN_IN,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE
 } Ttype;
 
 typedef struct {

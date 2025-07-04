@@ -126,46 +126,35 @@ static Statement parse_return_statement() {
 static Statement parse_let_statement() {
     Statement stmt;
     stmt.type = STMT_LET;
-    stmt.let_stmt.expr = nullptr;
+    stmt.let_stmt.expr = NULL; // Default to no expression
     eat(TOKEN_LET);
     stmt.let_stmt.ident = strdup(current_token.value);
     eat(TOKEN_IDENT);
-    eat(TOKEN_EQ);
 
-    // Parse expression
-    stmt.let_stmt.expr = parse_expression();
+    // If there is an equals sign, parse the expression
+    if (current_token.type == TOKEN_EQ) {
+        eat(TOKEN_EQ);
+        stmt.let_stmt.expr = parse_expression();
+    }
 
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
 
-static Statement parse_for_statement() {
+static Statement parse_while_statement() {
     Statement stmt;
-    stmt.type = STMT_FOR;
-    stmt.for_stmt.start_expr = NULL;
-    stmt.for_stmt.end_expr = NULL;
-    stmt.for_stmt.body = NULL;
-    stmt.for_stmt.body_count = 0;
+    stmt.type = STMT_WHILE;
 
-    // Consume 'for' token
-    eat(TOKEN_FOR);
+    eat(TOKEN_WHILE);
 
-    // Parse start expression (iterator)
-    stmt.for_stmt.start_expr = parse_expression();
+    // Parse the condition expression
+    stmt.while_stmt.condition = parse_expression();
 
-    // Consume ':' token
-    eat(TOKEN_COLON);
-
-    // Parse end expression (the condition)
-    stmt.for_stmt.end_expr = parse_expression();
-
-    // Parse for block
+    // Parse the body
     eat(TOKEN_LBRACE);
-
     const Program block = parser_parse_block();
-    stmt.for_stmt.body = block.statements;
-    stmt.for_stmt.body_count = block.count;
-
+    stmt.while_stmt.body = block.statements;
+    stmt.while_stmt.body_count = block.count;
     eat(TOKEN_RBRACE);
 
     return stmt;
@@ -193,8 +182,11 @@ static Program parser_parse_block() {
             case TOKEN_OUT:
                 stmt = parse_out_statement();
                 break;
-            case TOKEN_FOR:
-                stmt = parse_for_statement();
+            case TOKEN_IN:
+                stmt = parse_in_statement();
+                break;
+            case TOKEN_WHILE:
+                stmt = parse_while_statement();
                 break;
             case TOKEN_IDENT:
             case TOKEN_NUMBER:
@@ -234,7 +226,7 @@ static Statement parse_if_statement() {
     stmt.if_stmt.condition = parse_expression();
 
     eat(TOKEN_LBRACE);
-    Program true_block = parser_parse_block();
+    const Program true_block = parser_parse_block();
     stmt.if_stmt.if_block = true_block.statements;
     stmt.if_stmt.if_count = true_block.count;
     eat(TOKEN_RBRACE);
@@ -242,7 +234,7 @@ static Statement parse_if_statement() {
     if (current_token.type == TOKEN_ELSE) {
         eat(TOKEN_ELSE);
         eat(TOKEN_LBRACE);
-        Program false_block = parser_parse_block();
+        const Program false_block = parser_parse_block();
         stmt.if_stmt.else_block = false_block.statements;
         stmt.if_stmt.else_count = false_block.count;
         eat(TOKEN_RBRACE);
@@ -267,6 +259,18 @@ static Statement parse_out_statement() {
 
     // Expect semicolon
     eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
+static Statement parse_in_statement() {
+    Statement stmt;
+    stmt.type = STMT_IN;
+
+    eat(TOKEN_IN);
+    stmt.in_stmt.ident = strdup(current_token.value);
+    eat(TOKEN_IDENT);
+    eat(TOKEN_SEMICOLON);
+
     return stmt;
 }
 
@@ -300,8 +304,11 @@ Program parser_parse() {
             case TOKEN_OUT:
                 stmt = parse_out_statement();
                 break;
-            case TOKEN_FOR:
-                stmt = parse_for_statement();
+            case TOKEN_IN:
+                stmt = parse_in_statement();
+                break;
+            case TOKEN_WHILE:
+                stmt = parse_while_statement();
                 break;
             case TOKEN_IDENT: // Explicitly handle expression statements starting with an identifier
             case TOKEN_NUMBER:
@@ -333,10 +340,6 @@ Program parser_parse() {
     return program;
 }
 
-void parser_cleanup() {
-    token_free(&current_token);
-}
-
 void program_free(Program* program) {
     for (int i = 0; i < program->count; i++) {
         switch (program->statements[i].type) {
@@ -361,9 +364,10 @@ void program_free(Program* program) {
                 if (program->statements[i].expr_stmt.expr)
                     expression_free(program->statements[i].expr_stmt.expr);
                 break;
-            case STMT_FOR: // Add this case
-                for_statement_free(&program->statements[i].for_stmt);
+            case STMT_WHILE:
+                while_statement_free(&program->statements[i].while_stmt);
                 break;
+            default: ;
         }
     }
 
@@ -372,6 +376,7 @@ void program_free(Program* program) {
     program->count = 0;
     program->capacity = 0;
 }
+
 void expression_free(Expression* expr) {
     if (!expr) return;
 
@@ -390,6 +395,7 @@ void expression_free(Expression* expr) {
 
     free(expr);
 }
+
 void if_statement_free(const IfStatement* if_stmt) {
     if (if_stmt->condition) {
         expression_free(if_stmt->condition);
@@ -415,12 +421,19 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->if_block[i].out_stmt.expr)
                     expression_free(if_stmt->if_block[i].out_stmt.expr);
                 break;
+            case STMT_IN:
+                if (if_stmt->if_block[i].in_stmt.ident)
+                    free(if_stmt->if_block[i].in_stmt.ident);
+                break;
             case STMT_EXPR:
                 if (if_stmt->if_block[i].expr_stmt.expr)
                     expression_free(if_stmt->if_block[i].expr_stmt.expr);
                 break;
-            default:
-                fprintf(stderr, "Unknown if_statement type\n");
+            case STMT_WHILE:
+                while_statement_free(&if_stmt->else_block[i].while_stmt);
+                break;
+
+            default: ;
         }
     }
     free(if_stmt->if_block);
@@ -445,55 +458,62 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->else_block[i].out_stmt.expr)
                     expression_free(if_stmt->else_block[i].out_stmt.expr);
                 break;
+            case STMT_IN:
+                if (if_stmt->else_block[i].in_stmt.ident)
+                    free(if_stmt->else_block[i].in_stmt.ident);
+                break;
             case STMT_EXPR:
                 if (if_stmt->else_block[i].expr_stmt.expr)
                     expression_free(if_stmt->else_block[i].expr_stmt.expr);
                 break;
-            default:
-                fprintf(stderr, "Unknown else_statement type\n");
+            default: ;
         }
     }
     free(if_stmt->else_block);
 }
-
-void for_statement_free(const ForStatement* for_stmt) {
-    if (for_stmt->start_expr) {
-        expression_free(for_stmt->start_expr);
-    }
-    if (for_stmt->end_expr) {
-        expression_free(for_stmt->end_expr);
+void while_statement_free(const WhileStatement* while_stmt) {
+    if (while_stmt->condition) {
+        expression_free(while_stmt->condition);
     }
 
     // Free body statements
-    for (int i = 0; i < for_stmt->body_count; i++) {
-        switch (for_stmt->body[i].type) {
+    for (int i = 0; i < while_stmt->body_count; i++) {
+        switch (while_stmt->body[i].type) {
             case STMT_RETURN:
-                if (for_stmt->body[i].ret_stmt.expr)
-                    expression_free(for_stmt->body[i].ret_stmt.expr);
+                if (while_stmt->body[i].ret_stmt.expr)
+                    expression_free(while_stmt->body[i].ret_stmt.expr);
                 break;
             case STMT_LET:
-                if (for_stmt->body[i].let_stmt.ident)
-                    free(for_stmt->body[i].let_stmt.ident);
-                if (for_stmt->body[i].let_stmt.expr)
-                    expression_free(for_stmt->body[i].let_stmt.expr);
+                if (while_stmt->body[i].let_stmt.ident)
+                    free(while_stmt->body[i].let_stmt.ident);
+                if (while_stmt->body[i].let_stmt.expr)
+                    expression_free(while_stmt->body[i].let_stmt.expr);
                 break;
             case STMT_IF:
-                if_statement_free(&for_stmt->body[i].if_stmt);
-                break;
-            case STMT_FOR:
-                for_statement_free(&for_stmt->body[i].for_stmt);
+                if_statement_free(&while_stmt->body[i].if_stmt);
                 break;
             case STMT_OUT:
-                if (for_stmt->body[i].out_stmt.expr)
-                    expression_free(for_stmt->body[i].out_stmt.expr);
+                if (while_stmt->body[i].out_stmt.expr)
+                    expression_free(while_stmt->body[i].out_stmt.expr);
+                break;
+            case STMT_IN:
+                if (while_stmt->body[i].in_stmt.ident)
+                    free(while_stmt->body[i].in_stmt.ident);
                 break;
             case STMT_EXPR:
-                if (for_stmt->body[i].expr_stmt.expr)
-                    expression_free(for_stmt->body[i].expr_stmt.expr);
+                if (while_stmt->body[i].expr_stmt.expr)
+                    expression_free(while_stmt->body[i].expr_stmt.expr);
                 break;
-            default:
-                fprintf(stderr, "Unknown for_statement type\n");
+            case STMT_WHILE:
+                while_statement_free(&while_stmt->body[i].while_stmt);
+                break;
+
+            default: ;
         }
     }
-    free(for_stmt->body);
+    free(while_stmt->body);
+}
+
+void parser_cleanup() {
+    token_free(&current_token);
 }

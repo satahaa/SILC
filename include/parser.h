@@ -6,7 +6,7 @@
 typedef struct Statement Statement;
 
 typedef enum {
-    STMT_RETURN, STMT_LET, STMT_IF, STMT_OUT, STMT_EXPR, STMT_FOR,
+    STMT_RETURN, STMT_LET, STMT_IF, STMT_OUT, STMT_EXPR, STMT_WHILE, STMT_IN
 } StatementType;
 
 typedef enum { TYPE_DOUBLE, TYPE_STRING } VarType;
@@ -48,11 +48,14 @@ typedef struct {
 } OutStatement;
 
 typedef struct {
-    Expression* start_expr;
-    Expression* end_expr;
+    char* ident;
+} InStatement;
+
+typedef struct {
+    Expression* condition;
     Statement* body;
     int body_count;
-} ForStatement;
+} WhileStatement;
 
 typedef struct Statement {
     StatementType type;
@@ -62,7 +65,8 @@ typedef struct Statement {
         IfStatement if_stmt;
         OutStatement out_stmt;
         ExpressionStatement expr_stmt;
-        ForStatement for_stmt;
+        WhileStatement while_stmt;
+        InStatement in_stmt;
     };
 } Statement;
 
@@ -93,9 +97,10 @@ void expression_free(Expression* expr);
 static Statement parse_expression_statement();
 static Statement parse_if_statement();
 static Statement parse_out_statement();
+static Statement parse_in_statement();
 static Program parser_parse_block();
 static Program parse_block_statements();
-static Statement parse_for_statement();
 void if_statement_free(const IfStatement* if_stmt);
-void for_statement_free(const ForStatement* for_stmt);
+void while_statement_free(const WhileStatement* while_stmt);
+
 #endif // PARSER_H

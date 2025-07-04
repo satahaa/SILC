@@ -1,18 +1,4 @@
-let n = 50;
-let i = 1;
-for i : n
-{
-    let j = 2;
-    let isPrime = 1;
-    for j : j * j
-    {
-        if i % j == 0
-        {
-            isPrime = 0;
-        }
-    }
-    if isPrime == 1
-    {
-        out i;
-    }
-}
+let s = "";
+s = "Hello, World!";
+in s;
+out s;

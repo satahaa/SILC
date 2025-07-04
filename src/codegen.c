@@ -7,7 +7,6 @@ static int indent_level = 1;
 static int temp_var_counter = 0;
 static Symbol symbol_table[1024];
 static int symbol_count = 0;
-static int loop_var_counter = 0;
 
 // Helper function to add proper indentation
 static void add_indent() {
@@ -43,10 +42,6 @@ static VarType get_symbol_type(const char* name) {
     return TYPE_DOUBLE; // Default to double if not found
 }
 
-static bool is_simple_expression(const Expression* expr) {
-    return expr != NULL && expr->len == 1 &&
-           (expr->token_types[0] == TOKEN_NUMBER || expr->token_types[0] == TOKEN_IDENT);
-}
 
 void codegen_expression(const Expression* expr) {
     if (!expr || expr->len == 0) {
@@ -157,22 +152,22 @@ static void codegen_statements(const Statement* statements, const int count) {
                 VarType type;
                 // Check if the expression is a string literal to determine type
                 if (stmt.let_stmt.expr != NULL && stmt.let_stmt.expr->len == 1 && stmt.let_stmt.expr->token_types[0] == TOKEN_STRING) {
-                    fprintf(output, "const char* %s =", stmt.let_stmt.ident);
+                    // It's a string initialization
+                    fprintf(output, "char %s[256] =", stmt.let_stmt.ident);
+                    codegen_expression(stmt.let_stmt.expr);
                     type = TYPE_STRING;
                 } else {
-                    fprintf(output, "double %s =", stmt.let_stmt.ident);
+                    // It's a double or uninitialized
+                    fprintf(output, "double %s", stmt.let_stmt.ident);
+                    if (stmt.let_stmt.expr != NULL) {
+                        fprintf(output, " =");
+                        codegen_expression(stmt.let_stmt.expr);
+                    }
                     type = TYPE_DOUBLE;
                 }
+                fprintf(output, ";\n");
                 // Add the new variable to our symbol table
                 add_symbol(stmt.let_stmt.ident, type);
-
-                if (stmt.let_stmt.expr != NULL) {
-                    codegen_expression(stmt.let_stmt.expr);
-                } else {
-                    fprintf(stderr, "Expected expression after let statement\n");
-                    exit(EXIT_FAILURE);
-                }
-                fprintf(output, ";\n");
                 break;
 
             case STMT_RETURN:
@@ -218,7 +213,7 @@ static void codegen_statements(const Statement* statements, const int count) {
                 fprintf(output, "\n");
                 break;
             case STMT_OUT:
-                               bool is_string_var = false;
+                bool is_string_var = false;
                 bool is_string_literal = false;
 
                 if (stmt.out_stmt.expr != NULL && stmt.out_stmt.expr->len == 1) {
@@ -265,69 +260,52 @@ static void codegen_statements(const Statement* statements, const int count) {
                     temp_var_counter++;
                 }
                 break;
-            case STMT_FOR:
-                const int current_loop_id = loop_var_counter++;
-                const bool is_ident_iterator = stmt.for_stmt.start_expr->len == 1 &&
-                                               stmt.for_stmt.start_expr->token_types[0] == TOKEN_IDENT;
-                const char* iterator_name = is_ident_iterator ? stmt.for_stmt.start_expr->token_values[0] : NULL;
-
-                fprintf(output, "{\n");
-                indent_level++;
-                add_indent();
-
-                // Handle the end expression
-                if (!is_simple_expression(stmt.for_stmt.end_expr)) {
-                    fprintf(output, "double end_val_%d = ", current_loop_id);
-                    codegen_expression(stmt.for_stmt.end_expr);
-                    fprintf(output, ";\n");
-                    add_indent();
-                }
-
-                if (!is_ident_iterator) {
-                    // Handle the start expression for a new iterator
-                    if (!is_simple_expression(stmt.for_stmt.start_expr)) {
-                        fprintf(output, "double start_val_%d = ", current_loop_id);
-                        codegen_expression(stmt.for_stmt.start_expr);
-                        fprintf(output, ";\n");
-                        add_indent();
-                    }
-                    fprintf(output, "for (double i_%d = ", current_loop_id);
-                    if (is_simple_expression(stmt.for_stmt.start_expr)) {
-                        codegen_expression(stmt.for_stmt.start_expr);
-                    } else {
-                        fprintf(output, "start_val_%d", current_loop_id);
-                    }
-                    fprintf(output, "; i_%d <= ", current_loop_id);
-                    if (is_simple_expression(stmt.for_stmt.end_expr)) {
-                        codegen_expression(stmt.for_stmt.end_expr);
-                    } else {
-                        fprintf(output, "end_val_%d", current_loop_id);
-                    }
-                    fprintf(output, "; i_%d++) {\n", current_loop_id);
+            case STMT_IN:
+                const char* ident = stmt.in_stmt.ident;
+                type = get_symbol_type(ident);
+                if (type == TYPE_STRING) {
+                    fprintf(output, "scanf(\"%%255s\", %s);\n", ident);
                 } else {
-                    // Use an existing variable as the iterator
-                    fprintf(output, "for (; %s <= ", iterator_name);
-                    if (is_simple_expression(stmt.for_stmt.end_expr)) {
-                        codegen_expression(stmt.for_stmt.end_expr);
-                    } else {
-                        fprintf(output, "end_val_%d", current_loop_id);
-                    }
-                    fprintf(output, "; %s++) {\n", iterator_name);
+                    fprintf(output, "scanf(\"%%lf\", &%s);\n", ident);
                 }
+                break;
+            case STMT_WHILE:
+                add_indent();
+                fprintf(output, "while (");
+                codegen_expression(stmt.while_stmt.condition);
+                fprintf(output, ") {\n");
 
                 indent_level++;
-                codegen_statements(stmt.for_stmt.body, stmt.for_stmt.body_count);
+                codegen_statements(stmt.while_stmt.body, stmt.while_stmt.body_count);
                 indent_level--;
 
-                add_indent();
-                fprintf(output, "}\n");
-                indent_level--;
                 add_indent();
                 fprintf(output, "}\n");
                 break;
             case STMT_EXPR:
-                codegen_expression(stmt.expr_stmt.expr);
-                fprintf(output, ";\n");
+                const Expression* expr = stmt.expr_stmt.expr;
+
+                // Check for string assignment pattern: identifier = "string"
+                if (expr->len == 3 &&
+                    expr->token_types[0] == TOKEN_IDENT &&
+                    expr->token_types[1] == TOKEN_EQ &&
+                    expr->token_types[2] == TOKEN_STRING) {
+
+                    const char* identifier = expr->token_values[0];
+                    if (get_symbol_type(identifier) == TYPE_STRING) {
+                        // Generate strcpy for string assignment
+                        fprintf(output, "strcpy(%s, \"%s\");\n", identifier, expr->token_values[2]);
+                    } else {
+                        // Not a string variable, so generate a standard assignment.
+                        // This could be an error (e.g., num_var = "string"), which C would catch.
+                        codegen_expression(expr);
+                        fprintf(output, ";\n");
+                    }
+                    } else {
+                        // For all other expressions, generate the code as before.
+                        codegen_expression(expr);
+                        fprintf(output, ";\n");
+                    }
                 break;
             default: ;
         }
