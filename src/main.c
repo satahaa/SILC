@@ -5,24 +5,45 @@
 #include "parser.h"
 #include "codegen.h"
 
+void print_version() {
+    printf("Cor v1.0.0\n");
+    printf("A simple compiler for the Cor language.\n");
+    printf("Copyright (C) 2025 Sabah Alam Tahaa.\nThis is free software see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
+}
+
+void print_help() {
+    printf("Usage: Cor <file> | [options]\n\n");
+    printf("A simple compiler for the Cor language.\n\n");
+    printf("Options:\n");
+    printf("  -v, --version    Print compiler version and exit.\n");
+    printf("  -h, --help       Print this help message and exit.\n\n");
+    printf("To compile a file:\n");
+    printf("  Cor path/to/your/file.cor\n");
+}
+
 int main(const int argc, const char** argv) {
-
-    const char* c_file = "a.c";
-    const char* exe_file = "a.exe";
-
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <input_file.cor>\n", argv[0]);
-        exit(EXIT_FAILURE);
+        fprintf(stderr, "Error: No input file provided. Use 'Cor -h' for help.\n");
+        return 1;
     }
 
-    const char* input_file = argv[1];
+    const char* arg = argv[1];
+
+    if (strcmp(arg, "-v") == 0 || strcmp(arg, "--version") == 0) {
+        print_version();
+        return 0;
+    }
+
+    if (strcmp(arg, "-h") == 0 || strcmp(arg, "--help") == 0) {
+        print_help();
+        return 0;
+    }
+
+    // After checking for flags, the first argument must be the input file.
+    const char* input_file = arg;
     if (strstr(input_file, ".cor") == NULL) {
-        fprintf(stderr, "Error: Input file must have a .cor extension\n");
+        fprintf(stderr, "Error: Input file must have a .cor extension. Got: %s\n", input_file);
         exit(EXIT_FAILURE);
-    }
-
-    if (argc > 2) {
-        exe_file = argv[2];
     }
 
     // Check if input file exists
@@ -30,6 +51,20 @@ int main(const int argc, const char** argv) {
     if (source == NULL) {
         fprintf(stderr, "Error: Could not open input file %s\n", input_file);
         exit(EXIT_FAILURE);
+    }
+
+    // Check if GCC is installed before proceeding
+    if (system("gcc --version > nul 2>&1") != 0) {
+        fprintf(stderr, "Error: GCC is not installed or not in the system's PATH. Aborting.\n");
+        fclose(source);
+        exit(EXIT_FAILURE);
+    }
+
+    const char* c_file = "a.c";
+    const char* exe_file = "a.exe"; // Default output name
+
+    if (argc > 2) {
+        exe_file = argv[2];
     }
 
     // Initialize the compiler components
@@ -40,28 +75,28 @@ int main(const int argc, const char** argv) {
     // Parse the input
     Program program = parser_parse();
 
-    //Generate code
+    // Generate C code
     codegen_generate(program);
+
+    // Cleanup compiler components
     codegen_cleanup();
     program_free(&program);
     parser_cleanup();
     fclose(source);
-    // Check if GCC is installed
-    if (system("gcc --version > nul 2>&1") != 0) {
-        fprintf(stderr, "GCC is not installed! Aborting..\n");
-        exit(EXIT_FAILURE);
-    }
-    // Compile code
+
+    // Compile the generated C code
     char command[256];
     sprintf(command, "gcc %s -o %s", c_file, exe_file);
     const int ret = system(command);
 
-    if (ret) {
-        fprintf(stderr, "Compilation failed! Aborting.. \n");
+    if (ret != 0) {
+        fprintf(stderr, "Error: C compilation failed. Aborting.\n");
+        // Keep a.c for debugging
         exit(EXIT_FAILURE);
     }
-    // Clean up intermediate files
-    //remove(c_file);
+
+    // Clean up intermediate C file
+    remove(c_file);
 
     printf("Compilation completed successfully. Executable created: %s\n", exe_file);
 
