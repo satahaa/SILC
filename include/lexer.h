@@ -32,7 +32,19 @@ typedef enum {
     TOKEN_ELSE,
     TOKEN_LBRACE,
     TOKEN_RBRACE,
-    TOKEN_OUT
+    TOKEN_OUT,
+    TOKEN_STRING,
+    TOKEN_XOR,
+    TOKEN_BITWISE_OR,
+    TOKEN_BITWISE_AND,
+    TOKEN_LSHIFT,
+    TOKEN_RSHIFT,
+    TOKEN_BITWISE_NOT,
+    TOKEN_COLON,
+    TOKEN_WHILE,
+    TOKEN_IN,
+    TOKEN_BREAK,
+    TOKEN_CONTINUE
 } Ttype;
 
 typedef struct {

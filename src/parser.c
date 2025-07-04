@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "parser.h"
 
 static Token current_token;
+static bool is_in_loop = false;
 
 void parser_init() {
     current_token = lexer_next_token();
@@ -36,7 +38,9 @@ static Expression* parse_expression() {
     // Parse tokens until semicolon or unexpected token
     while (current_token.type != TOKEN_SEMICOLON &&
            current_token.type != TOKEN_EOF       &&
-           current_token.type != TOKEN_RBRACE) {
+           current_token.type != TOKEN_RBRACE    &&
+           current_token.type != TOKEN_COLON     &&
+           current_token.type != TOKEN_LBRACE) {
 
         if (current_token.type == TOKEN_NUMBER ||
             current_token.type == TOKEN_IDENT  ||
@@ -46,6 +50,8 @@ static Expression* parse_expression() {
             current_token.type == TOKEN_DIV    ||
             current_token.type == TOKEN_LPAREN ||
             current_token.type == TOKEN_RPAREN ||
+            current_token.type == TOKEN_MOD    ||
+            current_token.type == TOKEN_EQ     ||
             current_token.type == TOKEN_EQEQ   ||
             current_token.type == TOKEN_NEQ    ||
             current_token.type == TOKEN_LT     ||
@@ -54,28 +60,36 @@ static Expression* parse_expression() {
             current_token.type == TOKEN_GTE    ||
             current_token.type == TOKEN_AND    ||
             current_token.type == TOKEN_OR     ||
-            current_token.type == TOKEN_NOT) {
+            current_token.type == TOKEN_NOT    ||
+            current_token.type == TOKEN_STRING ||
+            current_token.type == TOKEN_XOR    ||
+            current_token.type == TOKEN_BITWISE_OR ||
+            current_token.type == TOKEN_BITWISE_AND||
+            current_token.type == TOKEN_LSHIFT ||
+            current_token.type == TOKEN_RSHIFT ||
+            current_token.type == TOKEN_BITWISE_NOT) {
 
             // Track parentheses balance
-            if (current_token.type == TOKEN_LPAREN) {
-                paren_count++;
-            } else if (current_token.type == TOKEN_RPAREN) {
-                paren_count--;
-                if (paren_count < 0) {
-                    fprintf(stderr, "Syntax error: Unbalanced parentheses at line %d, column %d\n",
-                           current_token.line, current_token.column);
-                    exit(EXIT_FAILURE);
+                if (current_token.type == TOKEN_LPAREN) {
+                    paren_count++;
+                } else if (current_token.type == TOKEN_RPAREN) {
+                    paren_count--;
+                    if (paren_count < 0) {
+                        fprintf(stderr, "Syntax error: Unbalanced parentheses at line %d, column %d\n",
+                               current_token.line, current_token.column);
+                        exit(EXIT_FAILURE);
+                    }
                 }
+
+                // Store token information
+                expr->token_types[expr->len] = current_token.type;
+                expr->token_values[expr->len] = strdup(current_token.value);
+                expr->len++;
+
+                // Get next token
+                eat(current_token.type);
             }
-
-            // Store token information
-            expr->token_types[expr->len] = current_token.type;
-            expr->token_values[expr->len] = strdup(current_token.value);
-            expr->len++;
-
-            // Get next token
-            eat(current_token.type);
-            } else break;
+        else break;
     }
 
     // Check for balanced parentheses
@@ -97,8 +111,14 @@ static Statement parse_return_statement() {
     // Consume 'ret' token
     eat(TOKEN_RETURN);
 
-    // Check if there's an expression before semicolon
+
     if (current_token.type != TOKEN_SEMICOLON) {
+        // Forbid returning a string literal directly
+        if (current_token.type == TOKEN_STRING) {
+            fprintf(stderr, "Syntax error: Cannot return a string at line %d, column %d\n",
+                    current_token.line, current_token.column);
+            exit(EXIT_FAILURE);
+        }
         stmt.ret_stmt.expr = parse_expression();
     }
     // Expect semicolon
@@ -108,18 +128,86 @@ static Statement parse_return_statement() {
 static Statement parse_let_statement() {
     Statement stmt;
     stmt.type = STMT_LET;
-    stmt.let_stmt.expr = nullptr;
+    stmt.let_stmt.expr = NULL; // Default to no expression
     eat(TOKEN_LET);
     stmt.let_stmt.ident = strdup(current_token.value);
     eat(TOKEN_IDENT);
-    eat(TOKEN_EQ);
 
-    // Parse expression
-    stmt.let_stmt.expr = parse_expression();
+    // If there is an equals sign, parse the expression
+    if (current_token.type == TOKEN_EQ) {
+        eat(TOKEN_EQ);
+        stmt.let_stmt.expr = parse_expression();
+    }
 
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
+
+static Statement parse_while_statement() {
+    Statement stmt;
+    stmt.type = STMT_WHILE;
+
+    eat(TOKEN_WHILE);
+
+    // Parse the condition expression
+    stmt.while_stmt.condition = parse_expression();
+
+    // Set loop context for the body
+    const bool previous_loop_state = is_in_loop;
+    is_in_loop = true;
+
+    // Parse the body
+    eat(TOKEN_LBRACE);
+    const Program block = parser_parse_block();
+    stmt.while_stmt.body = block.statements;
+    stmt.while_stmt.body_count = block.count;
+    eat(TOKEN_RBRACE);
+
+    // Restore previous loop context
+    is_in_loop = previous_loop_state;
+
+    // Check for more than one break or continue
+    int break_count = 0;
+    int continue_count = 0;
+    for (int i = 0; i < block.count; i++) {
+        if (block.statements[i].type == STMT_BREAK) break_count++;
+        if (block.statements[i].type == STMT_CONTINUE) continue_count++;
+    }
+
+    if (break_count > 1 || continue_count > 1) {
+        fprintf(stderr, "Syntax error: Only one 'brk' and one 'con' are allowed per loop scope.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    return stmt;
+}
+
+static Statement parse_break_statement() {
+    if (!is_in_loop) {
+        fprintf(stderr, "Syntax error: 'brk' is only allowed inside a loop at line %d, column %d\n",
+                current_token.line, current_token.column);
+        exit(EXIT_FAILURE);
+    }
+    Statement stmt;
+    stmt.type = STMT_BREAK;
+    eat(TOKEN_BREAK);
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
+static Statement parse_continue_statement() {
+    if (!is_in_loop) {
+        fprintf(stderr, "Syntax error: 'con' is only allowed inside a loop at line %d, column %d\n",
+                current_token.line, current_token.column);
+        exit(EXIT_FAILURE);
+    }
+    Statement stmt;
+    stmt.type = STMT_CONTINUE;
+    eat(TOKEN_CONTINUE);
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
 static Program parser_parse_block() {
     Program block;
     block.count = 0;
@@ -142,11 +230,28 @@ static Program parser_parse_block() {
             case TOKEN_OUT:
                 stmt = parse_out_statement();
                 break;
+            case TOKEN_IN:
+                stmt = parse_in_statement();
+                break;
+            case TOKEN_BREAK:
+                stmt = parse_break_statement();
+                break;
+            case TOKEN_CONTINUE:
+                stmt = parse_continue_statement();
+                break;
+            case TOKEN_WHILE:
+                stmt = parse_while_statement();
+                break;
+            case TOKEN_IDENT:
+            case TOKEN_NUMBER:
+            case TOKEN_LPAREN:
+                stmt = parse_expression_statement();
+                break;
             default:
-                fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
-                        token_type_to_string(current_token.type),
-                        current_token.line,
-                        current_token.column);
+                fprintf(stderr, "Syntax error: Unexpected token %s in block at line %d, column %d\n",
+                                        token_type_to_string(current_token.type),
+                                        current_token.line,
+                                        current_token.column);
                 exit(EXIT_FAILURE);
         }
 
@@ -164,41 +269,33 @@ static Program parser_parse_block() {
         block.statements[block.count++] = stmt;
     }
 
-    eat(TOKEN_RBRACE);
     return block;
 }
 static Statement parse_if_statement() {
     Statement stmt;
     stmt.type = STMT_IF;
-    stmt.if_stmt.condition = nullptr;
-    stmt.if_stmt.if_block = nullptr;
-    stmt.if_stmt.if_count = 0;
-    stmt.if_stmt.else_block = nullptr;
-    stmt.if_stmt.else_count = 0;
 
-    // Consume 'if' token
     eat(TOKEN_IF);
 
-    // Parse condition
     stmt.if_stmt.condition = parse_expression();
 
-    // Parse if block
     eat(TOKEN_LBRACE);
+    const Program true_block = parser_parse_block();
+    stmt.if_stmt.if_block = true_block.statements;
+    stmt.if_stmt.if_count = true_block.count;
+    eat(TOKEN_RBRACE);
 
-    // Parse statements in if block
-    const Program if_block = parser_parse_block();
-    stmt.if_stmt.if_block = if_block.statements;
-    stmt.if_stmt.if_count = if_block.count;
-
-    // Check for else block
     if (current_token.type == TOKEN_ELSE) {
         eat(TOKEN_ELSE);
         eat(TOKEN_LBRACE);
-
-        // Parse statements in else block
-        const Program else_block = parser_parse_block();
-        stmt.if_stmt.else_block = else_block.statements;
-        stmt.if_stmt.else_count = else_block.count;
+        const Program false_block = parser_parse_block();
+        stmt.if_stmt.else_block = false_block.statements;
+        stmt.if_stmt.else_count = false_block.count;
+        eat(TOKEN_RBRACE);
+    } else {
+        // Explicitly set the else branch to NULL when it's not present.
+        stmt.if_stmt.else_block = NULL;
+        stmt.if_stmt.else_count = 0;
     }
 
     return stmt;
@@ -215,6 +312,26 @@ static Statement parse_out_statement() {
     stmt.out_stmt.expr = parse_expression();
 
     // Expect semicolon
+    eat(TOKEN_SEMICOLON);
+    return stmt;
+}
+
+static Statement parse_in_statement() {
+    Statement stmt;
+    stmt.type = STMT_IN;
+
+    eat(TOKEN_IN);
+    stmt.in_stmt.ident = strdup(current_token.value);
+    eat(TOKEN_IDENT);
+    eat(TOKEN_SEMICOLON);
+
+    return stmt;
+}
+
+static Statement parse_expression_statement() {
+    Statement stmt;
+    stmt.type = STMT_EXPR;
+    stmt.expr_stmt.expr = parse_expression();
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
@@ -241,6 +358,17 @@ Program parser_parse() {
             case TOKEN_OUT:
                 stmt = parse_out_statement();
                 break;
+            case TOKEN_IN:
+                stmt = parse_in_statement();
+                break;
+            case TOKEN_WHILE:
+                stmt = parse_while_statement();
+                break;
+            case TOKEN_IDENT: // Explicitly handle expression statements starting with an identifier
+            case TOKEN_NUMBER:
+            case TOKEN_LPAREN:
+                stmt = parse_expression_statement();
+                break;
             default:
                 fprintf(stderr, "Syntax error: Unexpected token %s at line %d, column %d\n",
                         token_type_to_string(current_token.type),
@@ -266,10 +394,6 @@ Program parser_parse() {
     return program;
 }
 
-void parser_cleanup() {
-    token_free(&current_token);
-}
-
 void program_free(Program* program) {
     for (int i = 0; i < program->count; i++) {
         switch (program->statements[i].type) {
@@ -290,6 +414,14 @@ void program_free(Program* program) {
                 if (program->statements[i].out_stmt.expr)
                     expression_free(program->statements[i].out_stmt.expr);
                 break;
+            case STMT_EXPR:
+                if (program->statements[i].expr_stmt.expr)
+                    expression_free(program->statements[i].expr_stmt.expr);
+                break;
+            case STMT_WHILE:
+                while_statement_free(&program->statements[i].while_stmt);
+                break;
+            default: ;
         }
     }
 
@@ -298,6 +430,7 @@ void program_free(Program* program) {
     program->count = 0;
     program->capacity = 0;
 }
+
 void expression_free(Expression* expr) {
     if (!expr) return;
 
@@ -316,6 +449,7 @@ void expression_free(Expression* expr) {
 
     free(expr);
 }
+
 void if_statement_free(const IfStatement* if_stmt) {
     if (if_stmt->condition) {
         expression_free(if_stmt->condition);
@@ -341,6 +475,19 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->if_block[i].out_stmt.expr)
                     expression_free(if_stmt->if_block[i].out_stmt.expr);
                 break;
+            case STMT_IN:
+                if (if_stmt->if_block[i].in_stmt.ident)
+                    free(if_stmt->if_block[i].in_stmt.ident);
+                break;
+            case STMT_EXPR:
+                if (if_stmt->if_block[i].expr_stmt.expr)
+                    expression_free(if_stmt->if_block[i].expr_stmt.expr);
+                break;
+            case STMT_WHILE:
+                while_statement_free(&if_stmt->else_block[i].while_stmt);
+                break;
+
+            default: ;
         }
     }
     free(if_stmt->if_block);
@@ -365,7 +512,62 @@ void if_statement_free(const IfStatement* if_stmt) {
                 if (if_stmt->else_block[i].out_stmt.expr)
                     expression_free(if_stmt->else_block[i].out_stmt.expr);
                 break;
+            case STMT_IN:
+                if (if_stmt->else_block[i].in_stmt.ident)
+                    free(if_stmt->else_block[i].in_stmt.ident);
+                break;
+            case STMT_EXPR:
+                if (if_stmt->else_block[i].expr_stmt.expr)
+                    expression_free(if_stmt->else_block[i].expr_stmt.expr);
+                break;
+            default: ;
         }
     }
     free(if_stmt->else_block);
+}
+void while_statement_free(const WhileStatement* while_stmt) {
+    if (while_stmt->condition) {
+        expression_free(while_stmt->condition);
+    }
+
+    // Free body statements
+    for (int i = 0; i < while_stmt->body_count; i++) {
+        switch (while_stmt->body[i].type) {
+            case STMT_RETURN:
+                if (while_stmt->body[i].ret_stmt.expr)
+                    expression_free(while_stmt->body[i].ret_stmt.expr);
+                break;
+            case STMT_LET:
+                if (while_stmt->body[i].let_stmt.ident)
+                    free(while_stmt->body[i].let_stmt.ident);
+                if (while_stmt->body[i].let_stmt.expr)
+                    expression_free(while_stmt->body[i].let_stmt.expr);
+                break;
+            case STMT_IF:
+                if_statement_free(&while_stmt->body[i].if_stmt);
+                break;
+            case STMT_OUT:
+                if (while_stmt->body[i].out_stmt.expr)
+                    expression_free(while_stmt->body[i].out_stmt.expr);
+                break;
+            case STMT_IN:
+                if (while_stmt->body[i].in_stmt.ident)
+                    free(while_stmt->body[i].in_stmt.ident);
+                break;
+            case STMT_EXPR:
+                if (while_stmt->body[i].expr_stmt.expr)
+                    expression_free(while_stmt->body[i].expr_stmt.expr);
+                break;
+            case STMT_WHILE:
+                while_statement_free(&while_stmt->body[i].while_stmt);
+                break;
+
+            default: ;
+        }
+    }
+    free(while_stmt->body);
+}
+
+void parser_cleanup() {
+    token_free(&current_token);
 }

@@ -60,8 +60,27 @@ Token lexer_next_token() {
         return create_token(TOKEN_EOF, nullptr);
     }
 
+    if (current_char == '"') {
+        advance(); // Consume the opening quote
+        char buffer[256];
+        int i = 0;
+        while (current_char != EOF && current_char != '"' && i < 255) {
+            buffer[i++] = current_char;
+            advance();
+        }
+        buffer[i] = '\0';
+
+        if (current_char != '"') {
+            fprintf(stderr, "Syntax error: Unterminated string literal at line %d\n", current_line);
+            exit(EXIT_FAILURE);
+        }
+        advance(); // Consume the closing quote
+
+        return create_token(TOKEN_STRING, allocate_string(buffer));
+    }
+
     if (isalpha(current_char)) {
-        char buffer[32];
+        char buffer[256];
         int i = 0;
 
         while (current_char != EOF && (isalnum(current_char) || current_char == '_') && i < 31) {
@@ -92,6 +111,18 @@ Token lexer_next_token() {
         if (strcmp(buffer, "out") == 0) {
             return create_token(TOKEN_OUT, allocate_string(buffer));
         }
+        if (strcmp(buffer, "while") == 0){
+            return create_token(TOKEN_WHILE, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "in") == 0) {
+            return create_token(TOKEN_IN, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "brk") == 0) {
+            return create_token(TOKEN_BREAK, allocate_string(buffer));
+        }
+        if (strcmp(buffer, "con") == 0) {
+            return create_token(TOKEN_CONTINUE, allocate_string(buffer));
+        }
         if (strcmp(buffer, "return") == 0 ||
             strcmp(buffer, "int") == 0    ||
             strcmp(buffer, "long") == 0   ||
@@ -101,7 +132,6 @@ Token lexer_next_token() {
             strcmp(buffer, "double") == 0 ||
             strcmp(buffer, "void") == 0   ||
             strcmp(buffer, "for") == 0    ||
-            strcmp(buffer, "while") == 0  ||
             strcmp(buffer, "switch") == 0 ||
             strcmp(buffer, "case") == 0   ||
             strcmp(buffer, "default") == 0||
@@ -146,12 +176,9 @@ Token lexer_next_token() {
             strcmp(buffer, "final") == 0  ||
             strcmp(buffer, "finalize") == 0 ||
             strcmp(buffer, "synchronized") == 0 ||
-            strcmp(buffer, "let") == 0    ||
-            strcmp(buffer, "out") == 0    ||
             strcmp(buffer, "else") == 0   ||
             strcmp(buffer, "not") == 0    ||
             strcmp(buffer, "xor") == 0    ||
-            strcmp(buffer, "ret") == 0    ||
             strcmp(buffer, "include") == 0||
             strcmp(buffer, "define") == 0 ||
             strcmp(buffer, "undef") == 0  ||
@@ -162,23 +189,41 @@ Token lexer_next_token() {
                     current_line, current_column);
             exit(EXIT_FAILURE);
         }
-
         return create_token(TOKEN_IDENT, allocate_string(buffer));
     }
 
     // Check for numbers
-    if (isdigit(current_char)) {
-        char buffer[32];
+    if (isdigit(current_char) || (current_char == '.' && isdigit(fgetc(source)))) {
+        ungetc(current_char == '.' ? '.' : fgetc(source), source); // put back the peeked char
+        if (current_char != '.') {
+            ungetc(current_char, source); // also put back current if it wasn't the dot
+            current_char = (char)fgetc(source);
+        }
+
+
+        char buffer[64]; // Increased buffer size for doubles
         int i = 0;
 
-        while (current_char != EOF && isdigit(current_char) && i < 31) {
+        // Read the integer part
+        while (current_char != EOF && isdigit(current_char) && i < 63) {
             buffer[i++] = current_char;
             advance();
+        }
+
+        // Read the fractional part
+        if (current_char == '.' && i < 63) {
+            buffer[i++] = current_char;
+            advance();
+            while (current_char != EOF && isdigit(current_char) && i < 63) {
+                buffer[i++] = current_char;
+                advance();
+            }
         }
         buffer[i] = '\0';
 
         return create_token(TOKEN_NUMBER, allocate_string(buffer));
     }
+
     //Operators and delimiters
     if (current_char == '+' ||
         current_char == '-' ||
@@ -193,7 +238,13 @@ Token lexer_next_token() {
         current_char == '>' ||
         current_char == '!' ||
         current_char == '{' ||
-        current_char == '}') {
+        current_char == '}' ||
+        current_char == '&' ||
+        current_char == '|' ||
+        current_char == '^' ||
+        current_char == '~' ||
+        current_char == ':') {
+
         bool advanced = false;
         char buffer[3];
         buffer[0] = current_char;
@@ -211,6 +262,11 @@ Token lexer_next_token() {
             case ';': type = TOKEN_SEMICOLON; break;
             case '{': type = TOKEN_LBRACE; break;
             case '}': type = TOKEN_RBRACE; break;
+            case '&': type = TOKEN_BITWISE_AND; break;
+            case '|': type = TOKEN_BITWISE_OR; break;
+            case '^': type = TOKEN_XOR; break;
+            case '~': type = TOKEN_BITWISE_NOT; break;
+            case ':': type = TOKEN_COLON; break;
             case '=':
                 advance();
                 if (current_char == '=') {
@@ -230,6 +286,11 @@ Token lexer_next_token() {
                     buffer[2] = '\0';
                     type = TOKEN_LTE;
                     advance();
+                } else if (current_char == '<') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_LSHIFT;
+                    advance();
                 } else {
                     type = TOKEN_LT;
                     advanced = true;
@@ -241,6 +302,11 @@ Token lexer_next_token() {
                     buffer[1] = current_char;
                     buffer[2] = '\0';
                     type = TOKEN_GTE;
+                    advance();
+                } else if (current_char == '>') {
+                    buffer[1] = current_char;
+                    buffer[2] = '\0';
+                    type = TOKEN_RSHIFT;
                     advance();
                 } else {
                     type = TOKEN_GT;
@@ -306,6 +372,17 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_LBRACE: return "LBRACE";
         case TOKEN_RBRACE: return "RBRACE";
         case TOKEN_OUT: return "OUT";
+        case TOKEN_STRING : return "STRING";
+        case TOKEN_XOR: return "XOR";
+        case TOKEN_BITWISE_AND: return "BITWISE_AND";
+        case TOKEN_BITWISE_OR: return "BITWISE_OR";
+        case TOKEN_LSHIFT: return "LSHIFT";
+        case TOKEN_RSHIFT: return "RSHIFT";
+        case TOKEN_BITWISE_NOT: return "BITWISE_NOT";
+        case TOKEN_WHILE: return "WHILE";
+        case TOKEN_IN: return "IN";
+        case TOKEN_COLON: return "COLON";
+
         default: return "UNDEFINED";
     }
 }
