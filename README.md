@@ -144,6 +144,8 @@ The compiler parses the code, generates C output, and compiles it using GCC.
 * **Alternative Block Syntax**: Support Python-style `:`/`end` blocks.
 * **Functions & Scopes**: Add user-defined functions and proper variable scoping.
 * **Arrays**: Implement native array data structures.
+* **String indexing**: Allow accessing characters in strings (e.g., `str[0]`).
+* **Enhanced Operators**: Add `+=`, `-=`, `*=` etc.
 * **Improved Error Handling**: More descriptive messages and debug info.
 * **Comments**: Support single-line (`//`) and multi-line (`/* ... */`) comments.
 * **Standard Library**: Add common functions (e.g., `math`, `string` utilities).
