@@ -80,7 +80,7 @@ cmake --build .
 2. Compile it using the generated `Cor` binary.
 3. Enjoy!
 
-**Example**: sieve of Eratosthenes in Cor
+**Example**: Sieve of Eratosthenes in Cor
 
 ```cor
 let limit = 100;
