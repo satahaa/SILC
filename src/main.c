@@ -6,7 +6,7 @@
 #include "codegen.h"
 #include "semantic.h"
 void print_version() {
-    printf("Cor v1.1.0\n");
+    printf("Cor v1.2.1\n");
     printf("A simple compiler for the Cor language.\n");
     printf("Copyright (C) 2025 Sabah Alam Tahaa.\nThis is free software see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 }
