@@ -4,9 +4,9 @@
 #include "lexer.h"
 #include "parser.h"
 #include "codegen.h"
-
+#include "semantic.h"
 void print_version() {
-    printf("Cor v1.0.0\n");
+    printf("Cor v1.1.0\n");
     printf("A simple compiler for the Cor language.\n");
     printf("Copyright (C) 2025 Sabah Alam Tahaa.\nThis is free software see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 }
@@ -70,15 +70,29 @@ int main(const int argc, const char** argv) {
     // Initialize the compiler components
     lexer_init(source);
     parser_init();
+    semantic_init();  // Add this line
     codegen_init(c_file);
 
     // Parse the input
     Program program = parser_parse();
 
+    // Perform semantic analysis
+    SemanticResult semantic_result = semantic_analyze(&program);
+    if (semantic_result != SEMANTIC_OK) {
+        fprintf(stderr, "Semantic analysis failed. Compilation aborted.\n");
+        semantic_cleanup();
+        codegen_cleanup();
+        program_free(&program);
+        parser_cleanup();
+        fclose(source);
+        exit(EXIT_FAILURE);
+    }
+
     // Generate C code
     codegen_generate(program);
 
     // Cleanup compiler components
+    semantic_cleanup();  // Add this line
     codegen_cleanup();
     program_free(&program);
     parser_cleanup();

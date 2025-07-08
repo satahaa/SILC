@@ -1,0 +1,19 @@
+let x = 10;
+if x >= 10 {
+    while x < 20
+    {
+        out x;
+        if x == 15 {
+            brk;
+        }
+        let j = 100;
+        while j > 0 {
+            out j;
+            if j == 50 {
+                brk;
+            }
+            j = j - 1;
+        }
+        x = x + 1;
+    }
+}

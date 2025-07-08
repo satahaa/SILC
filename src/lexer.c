@@ -382,6 +382,8 @@ const char* token_type_to_string(const Ttype type) {
         case TOKEN_WHILE: return "WHILE";
         case TOKEN_IN: return "IN";
         case TOKEN_COLON: return "COLON";
+        case TOKEN_BREAK: return "BREAK";
+        case TOKEN_CONTINUE: return "CONTINUE";
 
         default: return "UNDEFINED";
     }
