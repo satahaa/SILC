@@ -127,14 +127,22 @@ The compiler parses the code, generates C output, and compiles it using GCC.
    * Uses a recursive descent parser to build a linear array of statements.
    * Enforces syntactical rules (e.g., `brk` and `con` only valid inside loops).
    * Stores expressions as token sequences for simplicity.
-3. **Code Generation**
+3. **Semantic Analysis**
+
+   * **Symbol Table Management**: Implements a scope stack for proper variable scoping across nested blocks.
+   * **Type System**: Performs type inference and validation, supporting `double` (default) and `string` types.
+   * **Variable Validation**: Ensures variables are declared before use and prevents redeclaration in the same scope.
+   * **Control Flow Validation**: Validates that `brk` and `con` statements are only used within loops.
+   * **Error Detection**: Catches semantic errors like undeclared variables, type mismatches, and invalid control flow before code generation.
+4. **Code Generation**
 
    * Translates the linear array of statements into equivalent C code.
    * Emits `strcpy` calls for string assignments.
    * Generates proper `if`/`else` blocks and `while` loops in C.
-4. **Compilation Pipeline**
+5. **Compilation Pipeline**
 
-   * Reads the source file, tokenizes input, parses statements, generates C code, and invokes GCC to produce an executable.
+   * Reads the source file, tokenizes input, parses statements, performs semantic analysis, generates C code, and invokes GCC to produce an executable.
+   * Compilation is aborted if semantic errors are detected, ensuring only valid programs are compiled.
 
 ---
 
@@ -144,6 +152,8 @@ The compiler parses the code, generates C output, and compiles it using GCC.
 * **Alternative Block Syntax**: Support Python-style `:`/`end` blocks.
 * **Functions & Scopes**: Add user-defined functions and proper variable scoping.
 * **Arrays**: Implement native array data structures.
+* **String indexing**: Allow accessing characters in strings (e.g., `str[0]`).
+* **Enhanced Operators**: Add `+=`, `-=`, `*=` etc.
 * **Improved Error Handling**: More descriptive messages and debug info.
 * **Comments**: Support single-line (`//`) and multi-line (`/* ... */`) comments.
 * **Standard Library**: Add common functions (e.g., `math`, `string` utilities).

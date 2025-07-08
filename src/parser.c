@@ -125,6 +125,7 @@ static Statement parse_return_statement() {
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
+
 static Statement parse_let_statement() {
     Statement stmt;
     stmt.type = STMT_LET;
@@ -139,6 +140,7 @@ static Statement parse_let_statement() {
         stmt.let_stmt.expr = parse_expression();
     }
 
+    // A 'let' statement must end with a semicolon
     eat(TOKEN_SEMICOLON);
     return stmt;
 }
@@ -166,28 +168,11 @@ static Statement parse_while_statement() {
     // Restore previous loop context
     is_in_loop = previous_loop_state;
 
-    // Check for more than one break or continue
-    int break_count = 0;
-    int continue_count = 0;
-    for (int i = 0; i < block.count; i++) {
-        if (block.statements[i].type == STMT_BREAK) break_count++;
-        if (block.statements[i].type == STMT_CONTINUE) continue_count++;
-    }
-
-    if (break_count > 1 || continue_count > 1) {
-        fprintf(stderr, "Syntax error: Only one 'brk' and one 'con' are allowed per loop scope.\n");
-        exit(EXIT_FAILURE);
-    }
-
+    // No semicolon after while block
     return stmt;
 }
 
 static Statement parse_break_statement() {
-    if (!is_in_loop) {
-        fprintf(stderr, "Syntax error: 'brk' is only allowed inside a loop at line %d, column %d\n",
-                current_token.line, current_token.column);
-        exit(EXIT_FAILURE);
-    }
     Statement stmt;
     stmt.type = STMT_BREAK;
     eat(TOKEN_BREAK);
@@ -196,11 +181,6 @@ static Statement parse_break_statement() {
 }
 
 static Statement parse_continue_statement() {
-    if (!is_in_loop) {
-        fprintf(stderr, "Syntax error: 'con' is only allowed inside a loop at line %d, column %d\n",
-                current_token.line, current_token.column);
-        exit(EXIT_FAILURE);
-    }
     Statement stmt;
     stmt.type = STMT_CONTINUE;
     eat(TOKEN_CONTINUE);
@@ -293,11 +273,11 @@ static Statement parse_if_statement() {
         stmt.if_stmt.else_count = false_block.count;
         eat(TOKEN_RBRACE);
     } else {
-        // Explicitly set the else branch to NULL when it's not present.
         stmt.if_stmt.else_block = NULL;
         stmt.if_stmt.else_count = 0;
     }
 
+    // No semicolon after if-else block
     return stmt;
 }
 
@@ -363,6 +343,12 @@ Program parser_parse() {
                 break;
             case TOKEN_WHILE:
                 stmt = parse_while_statement();
+                break;
+            case TOKEN_BREAK:
+                stmt = parse_break_statement();
+                break;
+            case TOKEN_CONTINUE:
+                stmt = parse_continue_statement();
                 break;
             case TOKEN_IDENT: // Explicitly handle expression statements starting with an identifier
             case TOKEN_NUMBER:
@@ -484,7 +470,7 @@ void if_statement_free(const IfStatement* if_stmt) {
                     expression_free(if_stmt->if_block[i].expr_stmt.expr);
                 break;
             case STMT_WHILE:
-                while_statement_free(&if_stmt->else_block[i].while_stmt);
+                while_statement_free(&if_stmt->if_block[i].while_stmt);
                 break;
 
             default: ;
@@ -519,6 +505,9 @@ void if_statement_free(const IfStatement* if_stmt) {
             case STMT_EXPR:
                 if (if_stmt->else_block[i].expr_stmt.expr)
                     expression_free(if_stmt->else_block[i].expr_stmt.expr);
+                break;
+            case STMT_WHILE:
+                while_statement_free(&if_stmt->else_block[i].while_stmt);
                 break;
             default: ;
         }
