@@ -6,24 +6,24 @@
 #include "codegen.h"
 #include "semantic.h"
 void print_version() {
-    printf("Cor v1.2.1\n");
-    printf("A simple compiler for the Cor language.\n");
+    printf("SILC v1.2.1\n");
+    printf("A Simple Imperative Language Compiler.\n");
     printf("Copyright (C) 2025 Sabah Alam Tahaa.\nThis is free software see the source for copying conditions.\nThere is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n");
 }
 
 void print_help() {
-    printf("Usage: Cor <file> | [options]\n\n");
-    printf("A simple compiler for the Cor language.\n\n");
+    printf("Usage: SILC <file> | [options]\n\n");
+    printf("A Simple Imperative Language Compiler.\n\n");
     printf("Options:\n");
     printf("  -v, --version    Print compiler version and exit.\n");
     printf("  -h, --help       Print this help message and exit.\n\n");
     printf("To compile a file:\n");
-    printf("  Cor path/to/your/file.cor\n");
+    printf("  SILC path/to/your/file.slc\n");
 }
 
 int main(const int argc, const char** argv) {
     if (argc < 2) {
-        fprintf(stderr, "Error: No input file provided. Use 'Cor -h' for help.\n");
+        fprintf(stderr, "Error: No input file provided. Use 'SILC -h' for help.\n");
         return 1;
     }
 
@@ -41,8 +41,8 @@ int main(const int argc, const char** argv) {
 
     // After checking for flags, the first argument must be the input file.
     const char* input_file = arg;
-    if (strstr(input_file, ".cor") == NULL) {
-        fprintf(stderr, "Error: Input file must have a .cor extension. Got: %s\n", input_file);
+    if (strstr(input_file, ".slc") == NULL) {
+        fprintf(stderr, "Error: Input file must have a .slc extension. Got: %s\n", input_file);
         exit(EXIT_FAILURE);
     }
 
