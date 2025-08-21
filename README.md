@@ -69,14 +69,14 @@ cmake --build .
 ```
 ## Run the compiler
 ```bash
-# Usage: ./SILC path/to/your/file.SILC
+# Usage: ./SILC path/to/your/file.slc
 ```
 
 ---
 
 # Usage
 
-1. Write your SILC code in a `.SLC` file.
+1. Write your SILC code in a `.slc` file.
 2. Compile it using the generated `SILC` binary.
 3. Enjoy!
 
