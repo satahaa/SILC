@@ -1,10 +1,10 @@
-# Cor Language Design
+# SILC Language Design
 
 This document outlines the design and implementation architecture of the Cor compiler.
 
 ## 1. Language Grammar
 
-The current grammar of the Cor language is defined using a syntax similar to Extended Backus-Naur Form (EBNF):
+The current grammar of the SILC language is defined using a syntax similar to Extended Backus-Naur Form (EBNF):
 
 ```
 Program         → Statement*
@@ -102,9 +102,9 @@ The semantic analyzer performs comprehensive validation of the parsed program be
 The code generator traverses the linear statement array and transpiles it into C code.
 
 -   **Process**:
-    -   Translates Cor statements directly into their C equivalents.
-    -   Maps Cor's dynamic typing to appropriate C types.
-    -   Wraps all generated expressions in parentheses to ensure that Cor's operator precedence is correctly preserved in the final C code.
+    -   Translates SILC statements directly into their C equivalents.
+    -   Maps SILC's dynamic typing to appropriate C types.
+    -   Wraps all generated expressions in parentheses to ensure that SILC's operator precedence is correctly preserved in the final C code.
     -   Constructs valid C `if-else` blocks and `while` loops from the parsed statements.
     -   Generates proper C code for input/output operations.
 
@@ -112,7 +112,7 @@ The code generator traverses the linear statement array and transpiles it into C
 
 The `main` executable orchestrates the entire compilation process.
 
-1.  **Input**: Reads a `.cor` source file specified via command-line arguments.
+1.  **Input**: Reads a `.slc` source file specified via command-line arguments.
 2.  **Pipeline Execution**: Initializes and runs the lexer, parser, semantic analyzer, and code generator in sequence.
 3.  **Semantic Validation**: Performs comprehensive semantic analysis and aborts compilation if errors are found.
 4.  **C Compilation**: Writes the generated C code to a temporary file.
@@ -121,7 +121,7 @@ The `main` executable orchestrates the entire compilation process.
 
 ## 4. Testing Strategy
 
-The project uses a set of `.cor` files in the `tests/` directory to validate compiler correctness. The testing process focuses on verifying:
+The project uses a set of `.slc` files in the `tests/` directory to validate compiler correctness. The testing process focuses on verifying:
 
 -   Correct evaluation of arithmetic, logical, and comparison expressions.
 -   Proper handling of variable assignments and return values.
