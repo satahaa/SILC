@@ -1,6 +1,6 @@
-# Cor Compiler
+# SILC
 
-Cor is a simple, dynamically‑typed programming language that compiles to C. It’s designed to be easy to learn and use, with a familiar C‑like syntax. This project, written in C, walks you through the fundamentals of compiler design—from lexical analysis all the way to code generation.
+Simple Imperative Language Compiler (SILC) is a simple, dynamically‑typed programming language that compiles to C. It’s designed to be easy to learn and use, with a familiar C‑like syntax. This project, written in C, walks you through the fundamentals of compiler design—from lexical analysis all the way to code generation.
 
 ---
 
@@ -34,13 +34,13 @@ Cor is a simple, dynamically‑typed programming language that compiles to C. It
 
 ## Turing Completeness
 
-Cor is Turing complete because it supports:
+SILC is Turing complete because it supports:
 
 1. **Conditional Branching** (`if`/`els`)
 2. **Indefinite Looping** (`while`)
 3. **Memory Access** (mutable variables)
 
-> Note: Practical limits exist (e.g., fixed buffer sizes), but Cor’s core is computationally universal.
+> Note: Practical limits exist (e.g., fixed buffer sizes), but SILC’s SILCe is computationally universal.
 
 ---
 
@@ -55,8 +55,8 @@ Cor is Turing complete because it supports:
 
 ## Clone the repo
 ```bash
-git clone https://github.com/satahaa/Cor.git
-cd Cor
+git clone https://github.com/satahaa/SILC.git
+cd SILC
 ```
 ## Create and enter build dir
 ```bash
@@ -69,20 +69,20 @@ cmake --build .
 ```
 ## Run the compiler
 ```bash
-# Usage: ./Cor path/to/your/file.cor
+# Usage: ./SILC path/to/your/file.SILC
 ```
 
 ---
 
 # Usage
 
-1. Write your Cor code in a `.cor` file.
-2. Compile it using the generated `Cor` binary.
+1. Write your SILC code in a `.SLC` file.
+2. Compile it using the generated `SILC` binary.
 3. Enjoy!
 
-**Example**: Sieve of Eratosthenes in Cor
+**Example**: Sieve of Eratosthenes in SILC
 
-```cor
+```SILC
 let limit = 100;
 let n = 2;
 
